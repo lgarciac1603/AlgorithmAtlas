@@ -1,7 +1,65 @@
-﻿@page "/"
+@page "/"
+@inject AlgorithmService AlgorithmService
+@inject NavigationManager Nav
 
-<PageTitle>Home</PageTitle>
+<PageTitle>AlgorithmAtlas — Algorithms & Data Structures Catalog</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="hero mb-8">
+    <MudText Typo="Typo.h2" Class="hero-title">Learn algorithms by exploring them.</MudText>
+    <MudText Typo="Typo.subtitle1" Class="hero-subtitle mt-3">
+        AlgorithmAtlas is a free, student-friendly catalog of data structures, sorting, searching,
+        graph and machine learning algorithms — each with clear explanations, complexity tables and pseudocode.
+    </MudText>
+    @if (_categories is { Count: > 0 })
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Class="mt-4"
+                   Href="@($"category/{Uri.EscapeDataString(_categories[0])}")">
+            Start with @_categories[0]
+        </MudButton>
+    }
+</div>
 
-Welcome to your new app.
+@if (_algorithms is null)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudGrid>
+        @foreach (var category in _categories!)
+        {
+            var items = _algorithms.Where(a => a.Category == category).ToList();
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Class="category-card" Outlined="true" @onclick="@(() => Nav.NavigateTo($"category/{Uri.EscapeDataString(category)}"))">
+                    <MudCardContent>
+                        <MudText Typo="Typo.h5">@category</MudText>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary mt-1">
+                            @items.Count algorithm@(items.Count == 1 ? "" : "s")
+                        </MudText>
+                        <div class="mt-3">
+                            @foreach (var item in items.Take(3))
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="mr-1 mb-1">@item.Name</MudChip>
+                            }
+                            @if (items.Count > 3)
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Class="mr-1 mb-1">+@(items.Count - 3) more</MudChip>
+                            }
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    private List<Algorithm>? _algorithms;
+    private List<string>? _categories;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _algorithms = await AlgorithmService.GetAlgorithmsAsync();
+        _categories = _algorithms.Select(a => a.Category).Distinct().ToList();
+    }
+}

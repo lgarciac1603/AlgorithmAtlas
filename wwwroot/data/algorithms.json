@@ -1,0 +1,128 @@
+[
+  {
+    "id": "array",
+    "name": "Array",
+    "category": "Data Structures",
+    "description": "A fixed-size collection of elements stored in contiguous memory and accessed by index.",
+    "difficulty": "Easy",
+    "timeComplexity": "Access O(1)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Access": "O(1)",
+      "Search": "O(n)",
+      "Insert (end)": "O(1) amortized",
+      "Insert (middle)": "O(n)",
+      "Delete": "O(n)"
+    }
+  },
+  {
+    "id": "linked-list",
+    "name": "Linked List",
+    "category": "Data Structures",
+    "description": "A linear collection of nodes where each node points to the next, allowing efficient insertion and removal.",
+    "difficulty": "Easy",
+    "timeComplexity": "Access O(n)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Access": "O(n)",
+      "Search": "O(n)",
+      "Insert (head)": "O(1)",
+      "Insert (tail)": "O(1) with tail pointer",
+      "Delete": "O(1) with reference"
+    }
+  },
+  {
+    "id": "stack",
+    "name": "Stack",
+    "category": "Data Structures",
+    "description": "A LIFO (Last-In, First-Out) collection where elements are added and removed from the same end.",
+    "difficulty": "Easy",
+    "timeComplexity": "Push/Pop O(1)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Push": "O(1)",
+      "Pop": "O(1)",
+      "Peek": "O(1)",
+      "Search": "O(n)"
+    }
+  },
+  {
+    "id": "queue",
+    "name": "Queue",
+    "category": "Data Structures",
+    "description": "A FIFO (First-In, First-Out) collection where elements are added at the rear and removed from the front.",
+    "difficulty": "Easy",
+    "timeComplexity": "Enqueue/Dequeue O(1)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Enqueue": "O(1)",
+      "Dequeue": "O(1)",
+      "Peek": "O(1)",
+      "Search": "O(n)"
+    }
+  },
+  {
+    "id": "hash-table",
+    "name": "Hash Table",
+    "category": "Data Structures",
+    "description": "A structure that maps keys to values using a hash function for near-constant-time lookups.",
+    "difficulty": "Medium",
+    "timeComplexity": "Average O(1)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Insert (avg)": "O(1)",
+      "Lookup (avg)": "O(1)",
+      "Delete (avg)": "O(1)",
+      "Insert/Lookup (worst)": "O(n)"
+    }
+  },
+  {
+    "id": "binary-tree",
+    "name": "Binary Search Tree",
+    "category": "Data Structures",
+    "description": "A hierarchical structure where each node has at most two children, keeping left subtree values smaller and right subtree values larger.",
+    "difficulty": "Medium",
+    "timeComplexity": "Average O(log n)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Search (avg)": "O(log n)",
+      "Insert (avg)": "O(log n)",
+      "Delete (avg)": "O(log n)",
+      "Search (worst)": "O(n)"
+    }
+  },
+  {
+    "id": "graph",
+    "name": "Graph",
+    "category": "Data Structures",
+    "description": "A set of nodes (vertices) connected by edges, used to model networks, relationships, and paths.",
+    "difficulty": "Medium",
+    "timeComplexity": "Traversal O(V + E)",
+    "spaceComplexity": "O(V + E)",
+    "operations": {
+      "Add vertex": "O(1)",
+      "Add edge": "O(1)",
+      "Traversal (BFS/DFS)": "O(V + E)",
+      "Check adjacency (matrix)": "O(1)",
+      "Check adjacency (list)": "O(degree)"
+    }
+  },
+  {
+    "id": "bubble-sort",
+    "name": "Bubble Sort",
+    "category": "Sorting",
+    "description": "Repeatedly swaps adjacent elements that are out of order until the list is sorted.",
+    "difficulty": "Easy",
+    "timeComplexity": "O(n²)",
+    "spaceComplexity": "O(1)"
+  },
+  {
+    "id": "selection-sort",
+    "name": "Selection Sort",
+    "category": "Sorting",
+    "description": "Repeatedly selects the minimum element from the unsorted portion and moves it to the front.",
+    "difficulty": "Easy",
+    "timeComplexity": "O(n²)",
+    "spaceComplexity": "O(1)"
+  }
+]

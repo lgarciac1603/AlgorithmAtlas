@@ -1,0 +1,67 @@
+@page "/category/{CategoryName}"
+@inject AlgorithmService AlgorithmService
+@inject NavigationManager Nav
+
+<PageTitle>@CategoryName — AlgorithmAtlas</PageTitle>
+
+<MudBreadcrumbs Items="_breadcrumbs" Class="px-0 mb-2" />
+<MudText Typo="Typo.h3" Class="mb-1">@CategoryName</MudText>
+<MudText Typo="Typo.body1" Class="mud-text-secondary mb-6">
+    @(_items?.Count ?? 0) algorithm@((_items?.Count ?? 0) == 1 ? "" : "s") in this category.
+</MudText>
+
+@if (_items is null)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudGrid>
+        @foreach (var algorithm in _items)
+        {
+            <MudItem xs="12" sm="6" md="4">
+                <MudCard Outlined="true" Class="algo-card" @onclick="@(() => Nav.NavigateTo($"algorithm/{algorithm.Id}"))">
+                    <MudCardContent>
+                        <div class="d-flex justify-space-between align-center">
+                            <MudText Typo="Typo.h6">@algorithm.Name</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="@DifficultyColor(algorithm.Difficulty)" Variant="Variant.Filled">
+                                @algorithm.Difficulty
+                            </MudChip>
+                        </div>
+                        <MudText Typo="Typo.body2" Class="mud-text-secondary mt-2">@algorithm.Description</MudText>
+                        <div class="mt-3 complexity-row">
+                            <code>Time: @algorithm.TimeComplexity</code>
+                            <code>Space: @algorithm.SpaceComplexity</code>
+                        </div>
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        }
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public string CategoryName { get; set; } = "";
+
+    private List<Algorithm>? _items;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var decoded = Uri.UnescapeDataString(CategoryName);
+        _items = await AlgorithmService.GetByCategoryAsync(decoded);
+        _breadcrumbs =
+        [
+            new BreadcrumbItem("Home", href: "/"),
+            new BreadcrumbItem(decoded, href: null, disabled: true)
+        ];
+    }
+
+    private static Color DifficultyColor(string difficulty) => difficulty switch
+    {
+        "Easy" => Color.Success,
+        "Medium" => Color.Warning,
+        "Hard" => Color.Error,
+        _ => Color.Default
+    };
+}

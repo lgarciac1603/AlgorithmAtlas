@@ -1,0 +1,137 @@
+# Visual Studio / .NET / Blazor / Wasm / Node
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Publish / output
+publish/
+artifacts/
+dist/
+out/
+
+# NuGet / dotnet package caches and lock files
+*.nupkg
+*.snupkg
+packages/
+!packages/build/
+.nuget/packages/
+project.lock.json
+project.assets.json
+packages.lock.json
+
+# Generated files
+Generated/
+*.generated.cs
+
+# Test Results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Azure Functions local settings
+local.settings.json
+
+# App settings and secrets
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+secrets.json
+
+# Environment files
+.env
+.env.*
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
+$RECYCLE.BIN/
+
+# Dotnet watch
+.dotnet/
+
+# BenchmarkDotNet
+BenchmarkDotNet.Artifacts/
+
+# Entity Framework
+Migrations/*.Designer.cs
+*.dbmdl
+
+# Database files (optional)
+*.db
+*.db-shm
+*.db-wal
+*.mdf
+*.ldf
+
+# Blazor / WebAssembly specific
+# Ignore generated framework and runtime artifacts that are produced during build/publish
+wwwroot/_framework/
+wwwroot/_content/
+_blazor/
+
+# Client-side (npm / node)
+node_modules/
+ClientApp/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+pnpm-lock.yaml
+
+# Coverage reports
+coverage/
+coverage.xml
+
+# SonarQube
+.sonarqube/
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+
+# StyleCop
+StyleCopReport.xml
+
+# Publish Profiles (if they contain secrets)
+Properties/PublishProfiles/*.pubxml.user
+
+# IIS Express
+.vs/config/
+
+# Azure
+ServiceDependencies/
+ServiceDependencies.Local.json
+
+# Docker
+docker-compose.override.yml

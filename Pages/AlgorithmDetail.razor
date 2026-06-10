@@ -1,0 +1,109 @@
+@page "/algorithm/{Id}"
+@inject AlgorithmService AlgorithmService
+@using Markdig
+
+<PageTitle>@(_algorithm?.Name ?? "Algorithm") — AlgorithmAtlas</PageTitle>
+
+@if (_algorithm is null)
+{
+    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+}
+else
+{
+    <MudBreadcrumbs Items="_breadcrumbs" Class="px-0 mb-2" />
+
+    <div class="d-flex align-center flex-wrap gap-2 mb-2">
+        <MudText Typo="Typo.h3">@_algorithm.Name</MudText>
+        <MudChip T="string" Color="@DifficultyColor(_algorithm.Difficulty)" Variant="Variant.Filled">@_algorithm.Difficulty</MudChip>
+    </div>
+    <MudText Typo="Typo.body1" Class="mud-text-secondary mb-6">@_algorithm.Description</MudText>
+
+    @if (Id == "stack")
+    {
+        <div class="mb-6">
+            <StackVisualizer />
+        </div>
+    }
+
+    <MudGrid>
+        <MudItem xs="12" md="8">
+            @if (_contentHtml is not null)
+            {
+                <div class="markdown-body">
+                    @((MarkupString)_contentHtml)
+                </div>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info" Variant="Variant.Outlined">
+                    A detailed explanation for this algorithm is coming soon.
+                </MudAlert>
+            }
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4" Outlined="true">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Complexity</MudText>
+                <div class="complexity-summary mb-3">
+                    <div><span class="mud-text-secondary">Time</span><code>@_algorithm.TimeComplexity</code></div>
+                    <div><span class="mud-text-secondary">Space</span><code>@_algorithm.SpaceComplexity</code></div>
+                </div>
+
+                @if (_algorithm.Operations is { Count: > 0 })
+                {
+                    <MudDivider Class="mb-3" />
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Operations</MudText>
+                    <MudSimpleTable Dense="true" Hover="true">
+                        <tbody>
+                            @foreach (var (op, complexity) in _algorithm.Operations)
+                            {
+                                <tr>
+                                    <td>@op</td>
+                                    <td><code>@complexity</code></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+
+    private Algorithm? _algorithm;
+    private string? _contentHtml;
+    private List<BreadcrumbItem> _breadcrumbs = [];
+
+    private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .Build();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _algorithm = await AlgorithmService.GetByIdAsync(Id);
+        if (_algorithm is null)
+        {
+            return;
+        }
+
+        var markdown = await AlgorithmService.GetContentAsync(Id);
+        _contentHtml = markdown is null ? null : Markdown.ToHtml(markdown, Pipeline);
+
+        _breadcrumbs =
+        [
+            new BreadcrumbItem("Home", href: "/"),
+            new BreadcrumbItem(_algorithm.Category, href: $"category/{Uri.EscapeDataString(_algorithm.Category)}"),
+            new BreadcrumbItem(_algorithm.Name, href: null, disabled: true)
+        ];
+    }
+
+    private static Color DifficultyColor(string difficulty) => difficulty switch
+    {
+        "Easy" => Color.Success,
+        "Medium" => Color.Warning,
+        "Hard" => Color.Error,
+        _ => Color.Default
+    };
+}
