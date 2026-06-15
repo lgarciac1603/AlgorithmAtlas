@@ -12,10 +12,16 @@
     </MudText>
     @if (_categories is { Count: > 0 })
     {
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Class="mt-4"
-                Href="@($"category/{Uri.EscapeDataString(_categories[0])}")">
-            Start with @_categories[0]
-        </MudButton>
+        <div class="d-flex flex-wrap gap-2 mt-4">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large"
+                    Href="@($"category/{Uri.EscapeDataString(_categories[0])}")">
+                Start with @_categories[0]
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large"
+                    StartIcon="@Icons.Material.Filled.Leaderboard" Href="compare">
+                Race sorting algorithms
+            </MudButton>
+        </div>
     }
 </div>
 

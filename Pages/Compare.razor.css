@@ -1,0 +1,129 @@
+.dataset-preview {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--mud-palette-text-secondary);
+    line-height: 1.5;
+    max-height: 88px;
+    overflow-y: auto;
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 6px;
+    padding: 0.5rem;
+}
+
+.algo-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 8px;
+    padding: 0.6rem;
+    min-height: 120px;
+}
+
+.stack-cap {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mud-palette-text-secondary);
+    text-align: center;
+}
+
+.algo-empty {
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.algo-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-left-width: 4px;
+    border-radius: 6px;
+    padding: 0.35rem 0.5rem;
+    background: var(--mud-palette-surface);
+    animation: chipIn 250ms ease-out;
+}
+
+.algo-chip.top {
+    box-shadow: 0 0 0 1px var(--mud-palette-primary);
+}
+
+.algo-chip .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex: 0 0 10px;
+}
+
+.algo-chip-name {
+    font-weight: 600;
+    flex: 1;
+    font-size: 0.85rem;
+}
+
+.algo-chip code {
+    font-size: 0.7rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.race-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.results-table th {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--mud-palette-text-secondary);
+}
+
+.res-badge {
+    font-size: 0.66rem;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    margin-right: 0.25rem;
+    white-space: nowrap;
+}
+
+.res-badge.time {
+    background: rgba(66, 165, 245, 0.18);
+    color: var(--mud-palette-info);
+}
+
+.res-badge.mem {
+    background: rgba(102, 187, 106, 0.18);
+    color: var(--mud-palette-success);
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.72rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.legend .sw {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    margin-right: 0.25rem;
+    vertical-align: -1px;
+}
+
+.legend .cmp { background: var(--mud-palette-warning); }
+.legend .swp { background: var(--mud-palette-error); }
+.legend .pvt { background: var(--mud-palette-info); }
+.legend .srt { background: var(--mud-palette-success); }
+
+@keyframes chipIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
