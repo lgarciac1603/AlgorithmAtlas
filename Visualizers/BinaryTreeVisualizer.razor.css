@@ -1,0 +1,67 @@
+.tree-frame {
+    position: relative;
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 8px;
+    padding: 0.5rem;
+    min-height: 120px;
+    transition: height 250ms ease;
+}
+
+.tree-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.85rem;
+}
+
+.tree-edges {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.tree-edge {
+    stroke: var(--mud-palette-lines-default);
+    stroke-width: 1.5;
+    transition: stroke 200ms ease;
+}
+
+.tree-edge.active {
+    stroke: var(--mud-palette-primary);
+    stroke-width: 2.5;
+}
+
+.tree-node {
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    border: 1.5px solid var(--mud-palette-secondary);
+    background: var(--mud-palette-action-default-hover);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: left 300ms ease, top 300ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.tree-node.on-path {
+    border-color: var(--mud-palette-primary);
+    box-shadow: 0 0 0 2px var(--mud-palette-primary);
+    color: var(--mud-palette-primary);
+}
+
+.tree-node.entering {
+    animation: nodePop 300ms ease-out;
+}
+
+@keyframes nodePop {
+    from { opacity: 0; transform: translateX(-50%) scale(0.3); }
+    to { opacity: 1; transform: translateX(-50%) scale(1); }
+}

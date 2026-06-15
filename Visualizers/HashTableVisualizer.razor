@@ -1,0 +1,140 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 hashtable-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Hash a key into a bucket</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">
+        The key is hashed to a bucket index. Keys that land in the same bucket form a collision chain (separate chaining).
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudTextField T="string" @bind-Value="_key" Label="Key" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Style="max-width: 110px" Disabled="_isAnimating" />
+        <MudTextField T="string" @bind-Value="_value" Label="Value" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Style="max-width: 110px" Disabled="_isAnimating" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Insert" Disabled="_isAnimating">Insert</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_isAnimating">Reset</MudButton>
+        <MudSpacer />
+        @if (_lastHash is not null)
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">
+                hash("@_lastHash") % @BucketCount = @_lastBucket
+            </MudText>
+        }
+    </div>
+
+    <div class="hash-label">Buckets</div>
+    <div class="hash-frame">
+        @for (var b = 0; b < BucketCount; b++)
+        {
+            var bucket = _buckets[b];
+            <div class="hash-bucket @(b == _lastBucket ? "active" : "")">
+                <div class="bucket-index">@b</div>
+                <div class="bucket-chain">
+                    @if (bucket.Count == 0)
+                    {
+                        <span class="bucket-empty">∅</span>
+                    }
+                    @foreach (var entry in bucket)
+                    {
+                        <div class="hash-entry @(entry.IsEntering ? "entering" : "")" @key="entry.Id">
+                            <span class="entry-key">@entry.Key</span>
+                            <span class="entry-value">@entry.Value</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private const int BucketCount = 8;
+    private readonly List<HashEntry>[] _buckets = CreateBuckets();
+    private int _nextId;
+    private string _key = "";
+    private string _value = "";
+    private bool _isAnimating;
+    private int _lastBucket = -1;
+    private string? _lastHash;
+
+    private static List<HashEntry>[] CreateBuckets()
+    {
+        var arr = new List<HashEntry>[BucketCount];
+        for (var i = 0; i < BucketCount; i++)
+        {
+            arr[i] = [];
+        }
+        return arr;
+    }
+
+    private async Task Insert()
+    {
+        if (string.IsNullOrWhiteSpace(_key))
+        {
+            return;
+        }
+
+        _isAnimating = true;
+
+        var key = _key.Trim();
+        var value = string.IsNullOrWhiteSpace(_value) ? key : _value.Trim();
+        var bucket = Hash(key);
+
+        _lastHash = key;
+        _lastBucket = bucket;
+        StateHasChanged();
+        await Task.Delay(300);
+
+        // update in place if the key already exists, else append to the chain
+        var existing = _buckets[bucket].FirstOrDefault(e => e.Key == key);
+        if (existing is not null)
+        {
+            existing.Value = value;
+        }
+        else
+        {
+            _buckets[bucket].Add(new HashEntry { Id = _nextId++, Key = key, Value = value, IsEntering = true });
+        }
+
+        _key = "";
+        _value = "";
+        StateHasChanged();
+        await Task.Delay(250);
+
+        foreach (var e in _buckets[bucket])
+        {
+            e.IsEntering = false;
+        }
+        _isAnimating = false;
+    }
+
+    private static int Hash(string key)
+    {
+        // simple deterministic polynomial rolling hash
+        var hash = 0;
+        foreach (var c in key)
+        {
+            hash = (hash * 31 + c) % 1_000_000_007;
+        }
+        return Math.Abs(hash) % BucketCount;
+    }
+
+    private void Reset()
+    {
+        foreach (var b in _buckets)
+        {
+            b.Clear();
+        }
+        _nextId = 0;
+        _lastBucket = -1;
+        _lastHash = null;
+    }
+
+    private sealed class HashEntry
+    {
+        public int Id { get; init; }
+        public string Key { get; init; } = "";
+        public string Value { get; set; } = "";
+        public bool IsEntering { get; set; }
+    }
+}

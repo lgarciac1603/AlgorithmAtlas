@@ -1,0 +1,203 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 tree-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Insert into a BST</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">
+        Each value walks from the root: smaller goes left, larger goes right, until it finds an empty spot. Watch the search path light up.
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudNumericField T="int?" @bind-Value="_inputValue" Label="Value" Variant="Variant.Outlined"
+                         Margin="Margin.Dense" Style="max-width: 110px" Disabled="_isAnimating" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Insert" Disabled="_isAnimating">Insert</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="InsertRandom" Disabled="_isAnimating">Random</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_isAnimating">Reset</MudButton>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Nodes: @_count</MudText>
+    </div>
+
+    <div class="tree-frame" style="height:@(Math.Max(1, _height) * LevelHeight + 40)px">
+        @if (_root is null)
+        {
+            <div class="tree-empty">empty — insert a value to grow the tree</div>
+        }
+        else
+        {
+            var nodes = Layout();
+            <svg class="tree-edges" width="100%" height="100%" preserveAspectRatio="none">
+                @foreach (var n in nodes.Where(n => n.Node.Parent is not null))
+                {
+                    var p = nodes.First(x => x.Node == n.Node.Parent);
+                    <line x1="@p.X.ToString(Inv)%" y1="@p.Y" x2="@n.X.ToString(Inv)%" y2="@n.Y"
+                          class="tree-edge @(n.Node.OnPath ? "active" : "")" />
+                }
+            </svg>
+            @foreach (var n in nodes)
+            {
+                <div class="tree-node @(n.Node.IsEntering ? "entering" : "") @(n.Node.OnPath ? "on-path" : "")"
+                     style="left:@n.X.ToString(Inv)%; top:@(n.Y - NodeRadius)px"
+                     @key="n.Node.Id">
+                    @n.Node.Value
+                </div>
+            }
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private const int LevelHeight = 70;
+    private const int NodeRadius = 18;
+    private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    private TreeNode? _root;
+    private int _nextId;
+    private int _count;
+    private int _height;
+    private int? _inputValue;
+    private bool _isAnimating;
+    private readonly Random _rng = new();
+
+    private async Task Insert()
+    {
+        var value = _inputValue ?? _rng.Next(1, 100);
+        _inputValue = null;
+        await InsertValue(value);
+    }
+
+    private Task InsertRandom() => InsertValue(_rng.Next(1, 100));
+
+    private async Task InsertValue(int value)
+    {
+        _isAnimating = true;
+        ClearPath(_root);
+
+        if (_root is null)
+        {
+            _root = new TreeNode { Id = _nextId++, Value = value, IsEntering = true, OnPath = true };
+            _count++;
+            Recompute();
+            StateHasChanged();
+            await Task.Delay(300);
+            _root.IsEntering = false;
+            _isAnimating = false;
+            return;
+        }
+
+        // walk the search path, lighting up each visited node
+        var current = _root;
+        while (true)
+        {
+            current.OnPath = true;
+            StateHasChanged();
+            await Task.Delay(280);
+
+            if (value == current.Value)
+            {
+                // duplicate — no insertion, just flash the existing node
+                await Task.Delay(150);
+                _isAnimating = false;
+                return;
+            }
+
+            if (value < current.Value)
+            {
+                if (current.Left is null)
+                {
+                    current.Left = new TreeNode { Id = _nextId++, Value = value, Parent = current, IsEntering = true, OnPath = true };
+                    break;
+                }
+                current = current.Left;
+            }
+            else
+            {
+                if (current.Right is null)
+                {
+                    current.Right = new TreeNode { Id = _nextId++, Value = value, Parent = current, IsEntering = true, OnPath = true };
+                    break;
+                }
+                current = current.Right;
+            }
+        }
+
+        _count++;
+        Recompute();
+        StateHasChanged();
+        await Task.Delay(300);
+        ClearPath(_root);
+        ClearEntering(_root);
+        _isAnimating = false;
+    }
+
+    private void Reset()
+    {
+        _root = null;
+        _nextId = 0;
+        _count = 0;
+        _height = 0;
+        _inputValue = null;
+    }
+
+    // ----- layout: in-order x slot, depth-based y -----
+
+    private List<Positioned> Layout()
+    {
+        var ordered = new List<Positioned>();
+        var slot = 0;
+        void InOrder(TreeNode? node, int depth)
+        {
+            if (node is null) return;
+            InOrder(node.Left, depth + 1);
+            ordered.Add(new Positioned { Node = node, Slot = slot++, Depth = depth });
+            InOrder(node.Right, depth + 1);
+        }
+        InOrder(_root, 0);
+
+        var total = Math.Max(1, ordered.Count);
+        foreach (var p in ordered)
+        {
+            p.X = (p.Slot + 0.5) / total * 100.0;
+            p.Y = p.Depth * LevelHeight + NodeRadius + 8;
+        }
+        return ordered;
+    }
+
+    private void Recompute() => _height = Depth(_root);
+
+    private static int Depth(TreeNode? n) => n is null ? 0 : 1 + Math.Max(Depth(n.Left), Depth(n.Right));
+
+    private static void ClearPath(TreeNode? n)
+    {
+        if (n is null) return;
+        n.OnPath = false;
+        ClearPath(n.Left);
+        ClearPath(n.Right);
+    }
+
+    private static void ClearEntering(TreeNode? n)
+    {
+        if (n is null) return;
+        n.IsEntering = false;
+        ClearEntering(n.Left);
+        ClearEntering(n.Right);
+    }
+
+    private sealed class TreeNode
+    {
+        public int Id { get; init; }
+        public int Value { get; init; }
+        public TreeNode? Left { get; set; }
+        public TreeNode? Right { get; set; }
+        public TreeNode? Parent { get; init; }
+        public bool IsEntering { get; set; }
+        public bool OnPath { get; set; }
+    }
+
+    private sealed class Positioned
+    {
+        public TreeNode Node { get; init; } = null!;
+        public int Slot { get; set; }
+        public int Depth { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
+    }
+}

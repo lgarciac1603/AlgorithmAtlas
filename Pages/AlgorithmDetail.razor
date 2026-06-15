@@ -18,10 +18,33 @@ else
     </div>
     <MudText Typo="Typo.body1" Class="mud-text-secondary mb-6">@_algorithm.Description</MudText>
 
-    @if (Id == "stack")
+    @if (HasVisualizer(Id))
     {
         <div class="mb-6">
-            <StackVisualizer />
+            @switch (Id)
+            {
+                case "stack":
+                    <StackVisualizer />
+                    break;
+                case "queue":
+                    <QueueVisualizer />
+                    break;
+                case "array":
+                    <ArrayVisualizer />
+                    break;
+                case "linked-list":
+                    <LinkedListVisualizer />
+                    break;
+                case "hash-table":
+                    <HashTableVisualizer />
+                    break;
+                case "binary-tree":
+                    <BinaryTreeVisualizer />
+                    break;
+                case "graph":
+                    <GraphVisualizer />
+                    break;
+            }
         </div>
     }
 
@@ -98,6 +121,9 @@ else
             new BreadcrumbItem(_algorithm.Name, href: null, disabled: true)
         ];
     }
+
+    private static bool HasVisualizer(string id) => id is
+        "stack" or "queue" or "array" or "linked-list" or "hash-table" or "binary-tree" or "graph";
 
     private static Color DifficultyColor(string difficulty) => difficulty switch
     {

@@ -13,7 +13,7 @@
     @if (_categories is { Count: > 0 })
     {
         <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Class="mt-4"
-                   Href="@($"category/{Uri.EscapeDataString(_categories[0])}")">
+                Href="@($"category/{Uri.EscapeDataString(_categories[0])}")">
             Start with @_categories[0]
         </MudButton>
     }

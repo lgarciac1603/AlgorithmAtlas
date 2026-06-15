@@ -1,0 +1,92 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 queue-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Enqueue &amp; Dequeue</MudText>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">
+        Enqueue values at the rear and dequeue them from the front. A queue is FIFO — first in, first out.
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudTextField T="string" @bind-Value="_inputValue" Label="Value" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Style="max-width: 120px" Disabled="_isAnimating" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Enqueue" Disabled="_isAnimating">Enqueue</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="Dequeue" Disabled="@(_items.Count == 0 || _isAnimating)">Dequeue</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_isAnimating">Reset</MudButton>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">
+            Count: @_items.Count
+        </MudText>
+    </div>
+
+    <div class="queue-layout">
+        <div class="queue-label">Queue (front → rear)</div>
+        <div class="queue-frame">
+            <div class="end-marker">FRONT</div>
+            <div class="queue-track">
+                @if (_items.Count == 0)
+                {
+                    <div class="queue-empty">empty</div>
+                }
+                @foreach (var entry in _items)
+                {
+                    var isFront = entry.Id == _items[0].Id;
+                    <div class="queue-item @(entry.IsExiting ? "exiting" : "") @(entry.IsEntering ? "entering" : "") @(isFront ? "front" : "")" @key="entry.Id">
+                        @entry.Value
+                    </div>
+                }
+            </div>
+            <div class="end-marker">REAR</div>
+        </div>
+    </div>
+</MudPaper>
+
+@code {
+    private readonly List<QueueEntry> _items = [];
+    private int _nextId;
+    private string _inputValue = "";
+    private bool _isAnimating;
+
+    private async Task Enqueue()
+    {
+        _isAnimating = true;
+
+        var value = string.IsNullOrWhiteSpace(_inputValue) ? (_nextId + 1).ToString() : _inputValue.Trim();
+
+        var entry = new QueueEntry { Id = _nextId++, Value = value, IsEntering = true };
+        _items.Add(entry);
+        _inputValue = "";
+        StateHasChanged();
+        await Task.Delay(250);
+        entry.IsEntering = false;
+        _isAnimating = false;
+    }
+
+    private async Task Dequeue()
+    {
+        if (_items.Count == 0)
+        {
+            return;
+        }
+
+        _isAnimating = true;
+        _items[0].IsExiting = true;
+        StateHasChanged();
+        await Task.Delay(250);
+        _items.RemoveAt(0);
+        _isAnimating = false;
+    }
+
+    private void Reset()
+    {
+        _items.Clear();
+        _nextId = 0;
+    }
+
+    private sealed class QueueEntry
+    {
+        public int Id { get; init; }
+        public string Value { get; init; } = "";
+        public bool IsExiting { get; set; }
+        public bool IsEntering { get; set; }
+    }
+}

@@ -1,0 +1,109 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 linkedlist-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Add &amp; Remove nodes</MudText>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">
+        Each node stores a value and a pointer to the next node. Adding at the head is O(1); the chain re-links as nodes come and go.
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudTextField T="string" @bind-Value="_inputValue" Label="Value" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Style="max-width: 120px" Disabled="_isAnimating" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddHead" Disabled="_isAnimating">Add head</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddTail" Disabled="_isAnimating">Add tail</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="RemoveHead" Disabled="@(_nodes.Count == 0 || _isAnimating)">Remove head</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_isAnimating">Reset</MudButton>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">
+            Length: @_nodes.Count
+        </MudText>
+    </div>
+
+    <div class="list-label">Singly linked list (head → … → null)</div>
+    <div class="list-frame">
+        <div class="list-anchor">head</div>
+        @if (_nodes.Count == 0)
+        {
+            <div class="list-arrow">→</div>
+            <div class="list-null">null</div>
+        }
+        @for (var i = 0; i < _nodes.Count; i++)
+        {
+            var node = _nodes[i];
+            var isHead = i == 0;
+            <div class="list-arrow">→</div>
+            <div class="list-node @(node.IsExiting ? "exiting" : "") @(node.IsEntering ? "entering" : "") @(isHead ? "head" : "")" @key="node.Id">
+                <span class="node-value">@node.Value</span>
+                <span class="node-next">next</span>
+            </div>
+            @if (i == _nodes.Count - 1)
+            {
+                <div class="list-arrow">→</div>
+                <div class="list-null">null</div>
+            }
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private readonly List<ListNode> _nodes = [];
+    private int _nextId;
+    private string _inputValue = "";
+    private bool _isAnimating;
+
+    private Task AddHead() => Add(atHead: true);
+
+    private Task AddTail() => Add(atHead: false);
+
+    private async Task Add(bool atHead)
+    {
+        _isAnimating = true;
+
+        var value = string.IsNullOrWhiteSpace(_inputValue) ? (_nextId + 1).ToString() : _inputValue.Trim();
+        var node = new ListNode { Id = _nextId++, Value = value, IsEntering = true };
+
+        if (atHead)
+        {
+            _nodes.Insert(0, node);
+        }
+        else
+        {
+            _nodes.Add(node);
+        }
+
+        _inputValue = "";
+        StateHasChanged();
+        await Task.Delay(250);
+        node.IsEntering = false;
+        _isAnimating = false;
+    }
+
+    private async Task RemoveHead()
+    {
+        if (_nodes.Count == 0)
+        {
+            return;
+        }
+
+        _isAnimating = true;
+        _nodes[0].IsExiting = true;
+        StateHasChanged();
+        await Task.Delay(250);
+        _nodes.RemoveAt(0);
+        _isAnimating = false;
+    }
+
+    private void Reset()
+    {
+        _nodes.Clear();
+        _nextId = 0;
+    }
+
+    private sealed class ListNode
+    {
+        public int Id { get; init; }
+        public string Value { get; init; } = "";
+        public bool IsExiting { get; set; }
+        public bool IsEntering { get; set; }
+    }
+}

@@ -1,0 +1,142 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 graph-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Build a graph</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">
+        Add vertices and connect them with edges. Vertices arrange around a circle; each edge joins two of them.
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddVertex" Disabled="@(_isAnimating || _vertices.Count >= 10)">Add vertex</MudButton>
+        <MudSelect T="int?" @bind-Value="_edgeFrom" Label="From" Variant="Variant.Outlined" Margin="Margin.Dense"
+                   Style="max-width: 90px" Dense="true" Disabled="@(_vertices.Count < 2 || _isAnimating)">
+            @foreach (var v in _vertices)
+            {
+                <MudSelectItem T="int?" Value="@v.Id">@v.Label</MudSelectItem>
+            }
+        </MudSelect>
+        <MudSelect T="int?" @bind-Value="_edgeTo" Label="To" Variant="Variant.Outlined" Margin="Margin.Dense"
+                   Style="max-width: 90px" Dense="true" Disabled="@(_vertices.Count < 2 || _isAnimating)">
+            @foreach (var v in _vertices)
+            {
+                <MudSelectItem T="int?" Value="@v.Id">@v.Label</MudSelectItem>
+            }
+        </MudSelect>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="AddEdge"
+                   Disabled="@(_isAnimating || _edgeFrom is null || _edgeTo is null || _edgeFrom == _edgeTo)">Add edge</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_isAnimating">Reset</MudButton>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">V: @_vertices.Count · E: @_edges.Count</MudText>
+    </div>
+
+    <div class="graph-frame">
+        @if (_vertices.Count == 0)
+        {
+            <div class="graph-empty">empty — add a vertex to start</div>
+        }
+        else
+        {
+            <svg class="graph-edges" width="100%" height="100%" preserveAspectRatio="none">
+                @foreach (var e in _edges)
+                {
+                    var a = _vertices.First(v => v.Id == e.From);
+                    var b = _vertices.First(v => v.Id == e.To);
+                    <line x1="@a.X.ToString(Inv)%" y1="@a.Y.ToString(Inv)%" x2="@b.X.ToString(Inv)%" y2="@b.Y.ToString(Inv)%"
+                          class="graph-edge @(e.IsEntering ? "entering" : "")" />
+                }
+            </svg>
+            @foreach (var v in _vertices)
+            {
+                <div class="graph-vertex @(v.IsEntering ? "entering" : "")"
+                     style="left:@v.X.ToString(Inv)%; top:@v.Y.ToString(Inv)%"
+                     @key="v.Id">
+                    @v.Label
+                </div>
+            }
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    private readonly List<Vertex> _vertices = [];
+    private readonly List<Edge> _edges = [];
+    private int _nextId;
+    private int? _edgeFrom;
+    private int? _edgeTo;
+    private bool _isAnimating;
+
+    private async Task AddVertex()
+    {
+        _isAnimating = true;
+        var label = ((char)('A' + _vertices.Count % 26)).ToString();
+        var vertex = new Vertex { Id = _nextId++, Label = label, IsEntering = true };
+        _vertices.Add(vertex);
+        LayoutVertices();
+        StateHasChanged();
+        await Task.Delay(300);
+        vertex.IsEntering = false;
+        _isAnimating = false;
+    }
+
+    private async Task AddEdge()
+    {
+        if (_edgeFrom is null || _edgeTo is null || _edgeFrom == _edgeTo)
+        {
+            return;
+        }
+
+        var from = _edgeFrom.Value;
+        var to = _edgeTo.Value;
+        if (_edges.Any(e => (e.From == from && e.To == to) || (e.From == to && e.To == from)))
+        {
+            return; // edge already exists
+        }
+
+        _isAnimating = true;
+        var edge = new Edge { From = from, To = to, IsEntering = true };
+        _edges.Add(edge);
+        StateHasChanged();
+        await Task.Delay(350);
+        edge.IsEntering = false;
+        _isAnimating = false;
+    }
+
+    private void Reset()
+    {
+        _vertices.Clear();
+        _edges.Clear();
+        _nextId = 0;
+        _edgeFrom = null;
+        _edgeTo = null;
+    }
+
+    private void LayoutVertices()
+    {
+        var n = _vertices.Count;
+        for (var i = 0; i < n; i++)
+        {
+            // distribute around a circle, starting from the top
+            var angle = -Math.PI / 2 + 2 * Math.PI * i / n;
+            _vertices[i].X = 50 + 38 * Math.Cos(angle);
+            _vertices[i].Y = 50 + 38 * Math.Sin(angle);
+        }
+    }
+
+    private sealed class Vertex
+    {
+        public int Id { get; init; }
+        public string Label { get; init; } = "";
+        public double X { get; set; } = 50;
+        public double Y { get; set; } = 50;
+        public bool IsEntering { get; set; }
+    }
+
+    private sealed class Edge
+    {
+        public int From { get; init; }
+        public int To { get; init; }
+        public bool IsEntering { get; set; }
+    }
+}

@@ -1,0 +1,66 @@
+.graph-frame {
+    position: relative;
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 8px;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    max-height: 360px;
+}
+
+.graph-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.85rem;
+}
+
+.graph-edges {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.graph-edge {
+    stroke: var(--mud-palette-secondary);
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.graph-edge.entering {
+    animation: edgeDraw 350ms ease-out;
+}
+
+.graph-vertex {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1.5px solid var(--mud-palette-primary);
+    background: var(--mud-palette-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition: left 300ms ease, top 300ms ease;
+    box-shadow: 0 0 0 1px var(--mud-palette-primary);
+}
+
+.graph-vertex.entering {
+    animation: vertexPop 300ms ease-out;
+}
+
+@keyframes vertexPop {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes edgeDraw {
+    from { opacity: 0; stroke-width: 0; }
+    to { opacity: 1; stroke-width: 2; }
+}

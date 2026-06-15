@@ -1,0 +1,75 @@
+.array-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mud-palette-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.array-frame {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 8px;
+    padding: 0.8rem;
+    min-height: 90px;
+    align-items: center;
+}
+
+.array-empty {
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.85rem;
+    padding: 1rem;
+}
+
+.array-cell {
+    width: 56px;
+    height: 56px;
+    border: 1px solid var(--mud-palette-secondary);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    position: relative;
+    background: var(--mud-palette-action-default-hover);
+    transition: transform 250ms ease;
+}
+
+.array-cell.entering {
+    animation: cellAppear 250ms ease-out;
+}
+
+.array-cell.exiting {
+    animation: cellRemove 250ms ease-in forwards;
+}
+
+.array-cell.shifting {
+    transform: translateX(6px);
+    border-color: var(--mud-palette-primary);
+}
+
+.array-index {
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-size: 0.6rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.array-value {
+    font-weight: 600;
+    margin-top: 0.4rem;
+}
+
+@keyframes cellAppear {
+    from { opacity: 0; transform: translateY(-12px) scale(0.85); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes cellRemove {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(-12px) scale(0.85); }
+}
