@@ -160,5 +160,23 @@
     "difficulty": "Medium",
     "timeComplexity": "O(n log n)",
     "spaceComplexity": "O(1)"
+  },
+  {
+    "id": "counting-sort",
+    "name": "Counting Sort",
+    "category": "Sorting",
+    "description": "Counts occurrences of each value and uses prefix sums to place every element directly into its final position — no comparisons needed.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(n + k)",
+    "spaceComplexity": "O(n + k)"
+  },
+  {
+    "id": "radix-sort",
+    "name": "Radix Sort",
+    "category": "Sorting",
+    "description": "Sorts integers digit by digit from least to most significant, using a stable counting sort at each position to achieve linear time on fixed-width keys.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(d · (n + k))",
+    "spaceComplexity": "O(n + k)"
   }
 ]

@@ -203,6 +203,94 @@ public static class SortAlgorithms
         foreach (var s in Sort(0, a.Length - 1)) yield return s;
     }
 
+    public static IEnumerable<SortStep> CountingSort(int[] input)
+    {
+        var a = (int[])input.Clone();
+        var n = a.Length;
+        if (n == 0) yield break;
+
+        // Find range silently — the interesting work is counting and placement.
+        var max = a[0];
+        for (var i = 1; i < n; i++)
+            if (a[i] > max) max = a[i];
+
+        var count = new int[max + 1];
+
+        // Counting phase: highlight each element being tallied.
+        for (var i = 0; i < n; i++)
+        {
+            yield return SortStep.Pivot(i);
+            count[a[i]]++;
+        }
+
+        // Prefix-sum phase: internal bookkeeping, no visual step.
+        for (var i = 1; i <= max; i++)
+            count[i] += count[i - 1];
+
+        // Placement: build output in reverse (stable), then write every position back.
+        var output = new int[n];
+        for (var i = n - 1; i >= 0; i--)
+        {
+            output[count[a[i]] - 1] = a[i];
+            count[a[i]]--;
+        }
+        for (var i = 0; i < n; i++)
+        {
+            a[i] = output[i];
+            yield return SortStep.Overwrite(i, output[i]);
+        }
+
+        for (var i = 0; i < n; i++)
+            yield return SortStep.MarkSorted(i);
+    }
+
+    public static IEnumerable<SortStep> RadixSort(int[] input)
+    {
+        var a = (int[])input.Clone();
+        var n = a.Length;
+        if (n == 0) yield break;
+
+        var max = a[0];
+        for (var i = 1; i < n; i++)
+            if (a[i] > max) max = a[i];
+
+        var output = new int[n];
+
+        // One counting-sort pass per digit position, least significant first.
+        for (var exp = 1; max / exp > 0; exp *= 10)
+        {
+            var count = new int[10];
+
+            // Count occurrences of each digit at this position.
+            for (var i = 0; i < n; i++)
+            {
+                yield return SortStep.Pivot(i);
+                count[(a[i] / exp) % 10]++;
+            }
+
+            // Prefix-sum on the 10 buckets.
+            for (var i = 1; i < 10; i++)
+                count[i] += count[i - 1];
+
+            // Place into output in reverse order (stable).
+            for (var i = n - 1; i >= 0; i--)
+            {
+                output[count[(a[i] / exp) % 10] - 1] = a[i];
+                count[(a[i] / exp) % 10]--;
+            }
+
+            // Copy back and emit writes.
+            for (var i = 0; i < n; i++)
+            {
+                a[i] = output[i];
+                yield return SortStep.Overwrite(i, output[i]);
+            }
+        }
+
+        for (var i = 0; i < n; i++)
+            yield return SortStep.MarkSorted(i);
+    }
+
     public static IEnumerable<SortStep> HeapSort(int[] input)
     {
         var a = (int[])input.Clone();

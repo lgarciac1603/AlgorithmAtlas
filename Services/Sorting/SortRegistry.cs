@@ -37,6 +37,10 @@ public static class SortRegistry
             "O(n log n) avg", "O(log n)", AuxSpaceRank: 1, Color: "#42a5f5", Stable: false),
         new("heap-sort", "Heap Sort", SortAlgorithms.HeapSort,
             "O(n log n)", "O(1)", AuxSpaceRank: 0, Color: "#ab47bc", Stable: false),
+        new("counting-sort", "Counting Sort", SortAlgorithms.CountingSort,
+            "O(n + k)", "O(n + k)", AuxSpaceRank: 3, Color: "#26c6da", Stable: true),
+        new("radix-sort", "Radix Sort", SortAlgorithms.RadixSort,
+            "O(d · (n + k))", "O(n + k)", AuxSpaceRank: 3, Color: "#ec407a", Stable: true),
     ];
 
     private static readonly Dictionary<string, SortDescriptor> ById =
