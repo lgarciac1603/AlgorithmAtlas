@@ -11,6 +11,8 @@
                       Margin="Margin.Dense" Style="max-width: 120px" Disabled="_isAnimating" />
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Push" Disabled="_isAnimating">Push</MudButton>
         <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="Pop" Disabled="@(_items.Count == 0 || _isAnimating)">Pop</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Info" OnClick="Peek"
+                   Disabled="@(_items.Count == 0 || _isAnimating)">Peek</MudButton>
         <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_isAnimating">Reset</MudButton>
         <MudSpacer />
         <MudText Typo="Typo.body2" Class="mud-text-secondary">
@@ -30,7 +32,7 @@
                 {
                     var entry = _items[i];
                     var isTop = i == _items.Count - 1;
-                    <div class="stack-item @(entry.IsExiting ? "exiting" : "") @(isTop ? "top" : "")" @key="entry.Id">
+                    <div class="stack-item @(entry.IsExiting ? "exiting" : "") @(isTop ? "top" : "") @(isTop && _isPeeking ? "peeking" : "")" @key="entry.Id">
                         @entry.Value
                         @if (isTop)
                         {
@@ -71,6 +73,7 @@
     private string _inputValue = "";
     private bool _isResizing;
     private bool _isAnimating;
+    private bool _isPeeking;
 
     private async Task Push()
     {
@@ -106,6 +109,17 @@
         StateHasChanged();
         await Task.Delay(250);
         _items.RemoveAt(_items.Count - 1);
+        _isAnimating = false;
+    }
+
+    private async Task Peek()
+    {
+        if (_items.Count == 0) return;
+        _isAnimating = true;
+        _isPeeking = true;
+        StateHasChanged();
+        await Task.Delay(700);
+        _isPeeking = false;
         _isAnimating = false;
     }
 

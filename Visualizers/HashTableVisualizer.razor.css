@@ -81,6 +81,30 @@
     color: var(--mud-palette-text-secondary);
 }
 
+.hash-entry.scanning {
+    border-color: var(--mud-palette-warning);
+    box-shadow: 0 0 0 1px var(--mud-palette-warning);
+}
+
+.hash-entry.found {
+    border-color: var(--mud-palette-success);
+    box-shadow: 0 0 0 1px var(--mud-palette-success);
+}
+
+.hash-entry.exiting {
+    animation: entryRemove 280ms ease-in forwards;
+}
+
+.result-found {
+    color: var(--mud-palette-success);
+    font-weight: 600;
+}
+
+@keyframes entryRemove {
+    from { opacity: 1; transform: scale(1); }
+    to   { opacity: 0; transform: scale(0.6); }
+}
+
 @keyframes entryPop {
     from { opacity: 0; transform: scale(0.6); }
     to { opacity: 1; transform: scale(1); }

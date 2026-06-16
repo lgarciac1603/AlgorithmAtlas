@@ -1,23 +1,36 @@
 @namespace AlgorithmAtlas.Visualizers
 
 <MudPaper Class="pa-4 hashtable-visualizer" Outlined="true">
-    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Hash a key into a bucket</MudText>
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Insert, Lookup &amp; Delete</MudText>
     <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">
-        The key is hashed to a bucket index. Keys that land in the same bucket form a collision chain (separate chaining).
+        The key is hashed to a bucket index. Keys that land in the same bucket form a collision chain (separate chaining). Lookup and delete follow the same hash → scan pattern.
     </MudText>
 
-    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+    <div class="d-flex flex-wrap gap-2 align-center mb-2">
         <MudTextField T="string" @bind-Value="_key" Label="Key" Variant="Variant.Outlined"
                       Margin="Margin.Dense" Style="max-width: 110px" Disabled="_isAnimating" />
         <MudTextField T="string" @bind-Value="_value" Label="Value" Variant="Variant.Outlined"
                       Margin="Margin.Dense" Style="max-width: 110px" Disabled="_isAnimating" />
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Insert" Disabled="_isAnimating">Insert</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Insert"
+                   Disabled="@(string.IsNullOrWhiteSpace(_key) || _isAnimating)">Insert</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Info" OnClick="Lookup"
+                   Disabled="@(string.IsNullOrWhiteSpace(_key) || _isAnimating)">Lookup</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="Delete"
+                   Disabled="@(string.IsNullOrWhiteSpace(_key) || _isAnimating)">Delete</MudButton>
         <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_isAnimating">Reset</MudButton>
-        <MudSpacer />
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4" style="min-height:24px">
         @if (_lastHash is not null)
         {
             <MudText Typo="Typo.body2" Class="mud-text-secondary">
                 hash("@_lastHash") % @BucketCount = @_lastBucket
+            </MudText>
+        }
+        @if (_resultMessage is not null)
+        {
+            <MudText Typo="Typo.body2" Class="@(_resultFound ? "result-found" : "mud-text-secondary")">
+                — @_resultMessage
             </MudText>
         }
     </div>
@@ -36,7 +49,7 @@
                     }
                     @foreach (var entry in bucket)
                     {
-                        <div class="hash-entry @(entry.IsEntering ? "entering" : "")" @key="entry.Id">
+                        <div class="hash-entry @EntryClass(entry)" @key="entry.Id">
                             <span class="entry-key">@entry.Key</span>
                             <span class="entry-value">@entry.Value</span>
                         </div>
@@ -56,78 +69,156 @@
     private bool _isAnimating;
     private int _lastBucket = -1;
     private string? _lastHash;
+    private string? _resultMessage;
+    private bool _resultFound;
 
     private static List<HashEntry>[] CreateBuckets()
     {
         var arr = new List<HashEntry>[BucketCount];
-        for (var i = 0; i < BucketCount; i++)
-        {
-            arr[i] = [];
-        }
+        for (var i = 0; i < BucketCount; i++) arr[i] = [];
         return arr;
     }
 
     private async Task Insert()
     {
-        if (string.IsNullOrWhiteSpace(_key))
-        {
-            return;
-        }
-
+        if (string.IsNullOrWhiteSpace(_key)) return;
         _isAnimating = true;
+        ClearResults();
 
         var key = _key.Trim();
         var value = string.IsNullOrWhiteSpace(_value) ? key : _value.Trim();
         var bucket = Hash(key);
-
         _lastHash = key;
         _lastBucket = bucket;
         StateHasChanged();
         await Task.Delay(300);
 
-        // update in place if the key already exists, else append to the chain
         var existing = _buckets[bucket].FirstOrDefault(e => e.Key == key);
         if (existing is not null)
         {
             existing.Value = value;
+            _resultMessage = "Updated existing key";
+            _resultFound = true;
         }
         else
         {
             _buckets[bucket].Add(new HashEntry { Id = _nextId++, Key = key, Value = value, IsEntering = true });
+            _resultMessage = $"Inserted into bucket {bucket}";
+            _resultFound = true;
         }
 
         _key = "";
         _value = "";
         StateHasChanged();
         await Task.Delay(250);
-
-        foreach (var e in _buckets[bucket])
-        {
-            e.IsEntering = false;
-        }
+        foreach (var e in _buckets[bucket]) e.IsEntering = false;
         _isAnimating = false;
     }
 
-    private static int Hash(string key)
+    private async Task Lookup()
     {
-        // simple deterministic polynomial rolling hash
-        var hash = 0;
-        foreach (var c in key)
+        if (string.IsNullOrWhiteSpace(_key)) return;
+        _isAnimating = true;
+        ClearResults();
+
+        var key = _key.Trim();
+        var bucket = Hash(key);
+        _lastHash = key;
+        _lastBucket = bucket;
+        StateHasChanged();
+        await Task.Delay(350);
+
+        var chain = _buckets[bucket];
+        for (var i = 0; i < chain.Count; i++)
         {
-            hash = (hash * 31 + c) % 1_000_000_007;
+            chain[i].IsScanning = true;
+            StateHasChanged();
+            await Task.Delay(300);
+
+            if (chain[i].Key == key)
+            {
+                chain[i].IsScanning = false;
+                chain[i].IsFound = true;
+                _resultFound = true;
+                _resultMessage = chain.Count > 1
+                    ? $"Found (step {i + 1} of {chain.Count} in collision chain)"
+                    : "Found";
+                _isAnimating = false;
+                return;
+            }
+            chain[i].IsScanning = false;
+            StateHasChanged();
+            await Task.Delay(100);
         }
-        return Math.Abs(hash) % BucketCount;
+
+        _resultFound = false;
+        _resultMessage = "Key not found";
+        _isAnimating = false;
+    }
+
+    private async Task Delete()
+    {
+        if (string.IsNullOrWhiteSpace(_key)) return;
+        _isAnimating = true;
+        ClearResults();
+
+        var key = _key.Trim();
+        var bucket = Hash(key);
+        _lastHash = key;
+        _lastBucket = bucket;
+        StateHasChanged();
+        await Task.Delay(350);
+
+        var entry = _buckets[bucket].FirstOrDefault(e => e.Key == key);
+        if (entry is null)
+        {
+            _resultFound = false;
+            _resultMessage = "Key not found — nothing deleted";
+            _isAnimating = false;
+            return;
+        }
+
+        entry.IsExiting = true;
+        StateHasChanged();
+        await Task.Delay(280);
+        _buckets[bucket].Remove(entry);
+        _resultFound = true;
+        _resultMessage = $"Deleted from bucket {bucket}";
+        _isAnimating = false;
+    }
+
+    private void ClearResults()
+    {
+        foreach (var b in _buckets)
+            foreach (var e in b) { e.IsFound = false; e.IsScanning = false; }
+        _resultMessage = null;
+        _resultFound = false;
     }
 
     private void Reset()
     {
-        foreach (var b in _buckets)
-        {
-            b.Clear();
-        }
+        foreach (var b in _buckets) b.Clear();
         _nextId = 0;
         _lastBucket = -1;
         _lastHash = null;
+        ClearResults();
+    }
+
+    private static string EntryClass(HashEntry e)
+    {
+        if (e.IsExiting) return "exiting";
+        if (e.IsFound) return "found";
+        if (e.IsScanning) return "scanning";
+        if (e.IsEntering) return "entering";
+        return "";
+    }
+
+    private static int Hash(string key)
+    {
+        var hash = 0;
+        foreach (var c in key)
+            hash = (hash * 31 + c) % 1_000_000_007;
+        return Math.Abs(hash) % BucketCount;
     }
 
     private sealed class HashEntry
@@ -136,5 +227,8 @@
         public string Key { get; init; } = "";
         public string Value { get; set; } = "";
         public bool IsEntering { get; set; }
+        public bool IsFound { get; set; }
+        public bool IsScanning { get; set; }
+        public bool IsExiting { get; set; }
     }
 }

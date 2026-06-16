@@ -11,6 +11,8 @@
                       Margin="Margin.Dense" Style="max-width: 120px" Disabled="_isAnimating" />
         <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Enqueue" Disabled="_isAnimating">Enqueue</MudButton>
         <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="Dequeue" Disabled="@(_items.Count == 0 || _isAnimating)">Dequeue</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Info" OnClick="Peek"
+                   Disabled="@(_items.Count == 0 || _isAnimating)">Peek</MudButton>
         <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_isAnimating">Reset</MudButton>
         <MudSpacer />
         <MudText Typo="Typo.body2" Class="mud-text-secondary">
@@ -30,7 +32,7 @@
                 @foreach (var entry in _items)
                 {
                     var isFront = entry.Id == _items[0].Id;
-                    <div class="queue-item @(entry.IsExiting ? "exiting" : "") @(entry.IsEntering ? "entering" : "") @(isFront ? "front" : "")" @key="entry.Id">
+                    <div class="queue-item @(entry.IsExiting ? "exiting" : "") @(entry.IsEntering ? "entering" : "") @(isFront ? "front" : "") @(isFront && _isPeeking ? "peeking" : "")" @key="entry.Id">
                         @entry.Value
                     </div>
                 }
@@ -45,6 +47,7 @@
     private int _nextId;
     private string _inputValue = "";
     private bool _isAnimating;
+    private bool _isPeeking;
 
     private async Task Enqueue()
     {
@@ -73,6 +76,17 @@
         StateHasChanged();
         await Task.Delay(250);
         _items.RemoveAt(0);
+        _isAnimating = false;
+    }
+
+    private async Task Peek()
+    {
+        if (_items.Count == 0) return;
+        _isAnimating = true;
+        _isPeeking = true;
+        StateHasChanged();
+        await Task.Delay(700);
+        _isPeeking = false;
         _isAnimating = false;
     }
 

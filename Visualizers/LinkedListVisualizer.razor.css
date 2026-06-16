@@ -73,6 +73,26 @@
     align-items: center;
 }
 
+.list-node.scanning {
+    border-color: var(--mud-palette-warning);
+    box-shadow: 0 0 0 1px var(--mud-palette-warning);
+}
+
+.list-node.found {
+    border-color: var(--mud-palette-success);
+    box-shadow: 0 0 0 1px var(--mud-palette-success);
+}
+
+.list-node.tail {
+    border-color: var(--mud-palette-secondary);
+    box-shadow: 0 0 0 1px var(--mud-palette-secondary);
+}
+
+.result-found {
+    color: var(--mud-palette-success);
+    font-weight: 600;
+}
+
 @keyframes nodeIn {
     from { opacity: 0; transform: translateY(-12px) scale(0.9); }
     to { opacity: 1; transform: translateY(0) scale(1); }
