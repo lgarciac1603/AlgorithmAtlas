@@ -43,6 +43,15 @@ else
                 case "binary-tree":
                     <BinaryTreeVisualizer />
                     break;
+                case "avl-tree":
+                    <AvlTreeVisualizer />
+                    break;
+                case "binary-heap":
+                    <BinaryHeapVisualizer />
+                    break;
+                case "trie":
+                    <TrieVisualizer />
+                    break;
                 case "graph":
                     <GraphVisualizer />
                     break;
@@ -178,7 +187,8 @@ else
     }
 
     private static bool HasVisualizer(string id) => id is
-        "stack" or "queue" or "array" or "linked-list" or "hash-table" or "binary-tree" or "graph";
+        "stack" or "queue" or "array" or "linked-list" or "hash-table"
+        or "binary-tree" or "avl-tree" or "binary-heap" or "trie" or "graph";
 
     private static Color DifficultyColor(string difficulty) => difficulty switch
     {

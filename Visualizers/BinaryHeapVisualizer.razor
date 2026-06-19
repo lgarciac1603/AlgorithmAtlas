@@ -1,0 +1,191 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 tree-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Min-Heap — Insert &amp; Extract</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">
+        A complete binary tree backed by an array. Insert bubbles the new value up; Extract-Min swaps root with last, removes it, then bubbles down. The array below mirrors the tree.
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudNumericField T="int?" @bind-Value="_input" Label="Value" Variant="Variant.Outlined"
+                         Margin="Margin.Dense" Style="max-width:100px" Disabled="_busy" />
+        <MudButton Variant="Variant.Filled"   Color="Color.Primary"   OnClick="Insert"      Disabled="_busy">Insert</MudButton>
+        <MudButton Variant="Variant.Outlined"                          OnClick="Rnd"         Disabled="_busy">Random</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ExtractMin"   Disabled="@(_size == 0 || _busy)">Extract-Min</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Info"      OnClick="Peek"         Disabled="@(_size == 0 || _busy)">Peek</MudButton>
+        <MudButton Variant="Variant.Text"                              OnClick="Reset"        Disabled="_busy">Reset</MudButton>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Size: @_size @(_status is not null ? $"— {_status}" : "")</MudText>
+    </div>
+
+    @* Tree view *@
+    @{
+        var treeH = _size == 0 ? 1 : (int)Math.Floor(Math.Log2(_size)) + 1;
+    }
+    <div class="tree-frame mb-3" style="height:@(treeH * LH + 40)px">
+        @if (_size == 0)
+        {
+            <div class="tree-empty">empty — insert values to build the heap</div>
+        }
+        else
+        {
+            <svg class="tree-edges" width="100%" height="100%" preserveAspectRatio="none">
+                @for (var i = 1; i < _size; i++)
+                {
+                    var pi = (i - 1) / 2;
+                    var (px, py) = Pos(pi); var (cx, cy) = Pos(i);
+                    <line x1="@px.ToString(Inv)%" y1="@py" x2="@cx.ToString(Inv)%" y2="@cy"
+                          class="tree-edge @(IsActive(i) || IsActive(pi) ? "active" : "")" />
+                }
+            </svg>
+            @for (var i = 0; i < _size; i++)
+            {
+                var entry = _heap[i]; var (x, y) = Pos(i);
+                <div class="tree-node @HC(entry)" style="left:@x.ToString(Inv)%; top:@(y - R)px" @key="entry.Id">
+                    @entry.Value
+                </div>
+            }
+        }
+    </div>
+
+    @* Array view *@
+    <div class="heap-label">Backing array</div>
+    <div class="heap-array">
+        @for (var i = 0; i < _size; i++)
+        {
+            var entry = _heap[i];
+            <div class="heap-slot @HC(entry)" @key="entry.Id">
+                <span class="slot-idx">@i</span>
+                <span class="slot-val">@entry.Value</span>
+            </div>
+        }
+        @if (_size == 0)
+        {
+            <span class="mud-text-secondary" style="font-size:0.85rem">empty</span>
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private const int LH = 72, R = 18;
+    private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    private readonly HE[] _heap = new HE[64];
+    private int _size, _id;
+    private int? _input;
+    private string? _status;
+    private bool _busy;
+    private readonly Random _rng = new();
+
+    // ── Insert ───────────────────────────────────────────────────────────────
+
+    private async Task Insert() { var v = _input ?? _rng.Next(1, 99); _input = null; await DoInsert(v); }
+    private Task Rnd() => DoInsert(_rng.Next(1, 99));
+
+    private async Task DoInsert(int value)
+    {
+        if (_size >= _heap.Length) return;
+        _busy = true; _status = null; ClearAll();
+        _heap[_size] = new HE { Id = _id++, Value = value, IsEntering = true };
+        StateHasChanged(); await Task.Delay(250);
+        _heap[_size].IsEntering = false;
+        await BubbleUp(_size);
+        _size++;
+        ClearAll(); StateHasChanged(); _busy = false;
+    }
+
+    private async Task BubbleUp(int i)
+    {
+        while (i > 0)
+        {
+            var p = (i - 1) / 2;
+            _heap[i].IsComparing = _heap[p].IsComparing = true; StateHasChanged(); await Task.Delay(300);
+            if (_heap[i].Value >= _heap[p].Value)
+            {
+                _heap[i].IsComparing = _heap[p].IsComparing = false; break;
+            }
+            _heap[i].IsComparing = _heap[p].IsComparing = false;
+            (_heap[i], _heap[p]) = (_heap[p], _heap[i]);
+            _heap[i].IsSwapping = _heap[p].IsSwapping = true; StateHasChanged(); await Task.Delay(220);
+            _heap[i].IsSwapping = _heap[p].IsSwapping = false;
+            i = p;
+        }
+    }
+
+    // ── Extract-Min ──────────────────────────────────────────────────────────
+
+    private async Task ExtractMin()
+    {
+        if (_size == 0) return;
+        _busy = true; _status = $"Extracted min: {_heap[0].Value}"; ClearAll();
+        _heap[0].IsExiting = true; StateHasChanged(); await Task.Delay(300);
+        _size--;
+        if (_size > 0)
+        {
+            _heap[0] = _heap[_size]; _heap[0].IsSwapping = true; StateHasChanged(); await Task.Delay(250);
+            _heap[0].IsSwapping = false;
+            await BubbleDown(0);
+        }
+        ClearAll(); StateHasChanged(); _busy = false;
+    }
+
+    private async Task BubbleDown(int i)
+    {
+        while (true)
+        {
+            var l = 2 * i + 1; var r = 2 * i + 2; var smallest = i;
+            if (l < _size && _heap[l].Value < _heap[smallest].Value) smallest = l;
+            if (r < _size && _heap[r].Value < _heap[smallest].Value) smallest = r;
+            if (smallest == i) break;
+            _heap[i].IsComparing = _heap[smallest].IsComparing = true; StateHasChanged(); await Task.Delay(300);
+            _heap[i].IsComparing = _heap[smallest].IsComparing = false;
+            (_heap[i], _heap[smallest]) = (_heap[smallest], _heap[i]);
+            _heap[i].IsSwapping = _heap[smallest].IsSwapping = true; StateHasChanged(); await Task.Delay(220);
+            _heap[i].IsSwapping = _heap[smallest].IsSwapping = false;
+            i = smallest;
+        }
+    }
+
+    // ── Peek ─────────────────────────────────────────────────────────────────
+
+    private async Task Peek()
+    {
+        if (_size == 0) return;
+        _busy = true; _status = $"Min = {_heap[0].Value}";
+        _heap[0].IsPeeking = true; StateHasChanged(); await Task.Delay(700);
+        _heap[0].IsPeeking = false; _busy = false;
+    }
+
+    private void Reset() { for (var i = 0; i < _size; i++) _heap[i] = null!; _size = 0; _id = 0; _status = null; }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private void ClearAll() { for (var i = 0; i < _size; i++) { _heap[i].IsComparing = _heap[i].IsSwapping = _heap[i].IsEntering = _heap[i].IsExiting = _heap[i].IsPeeking = false; } }
+
+    private bool IsActive(int i) => i < _size && (_heap[i].IsComparing || _heap[i].IsSwapping);
+
+    private (double X, double Y) Pos(int i)
+    {
+        var lv = (int)Math.Log2(i + 1);
+        var posInLevel = i - ((1 << lv) - 1);
+        var count = 1 << lv;
+        return ((posInLevel + 0.5) / count * 100.0, lv * LH + R + 8);
+    }
+
+    private static string HC(HE e)
+    {
+        if (e.IsExiting)   return "exiting";
+        if (e.IsSwapping)  return "swap";
+        if (e.IsComparing) return "on-path";
+        if (e.IsPeeking)   return "found";
+        if (e.IsEntering)  return "entering";
+        return "";
+    }
+
+    private sealed class HE
+    {
+        public int Id { get; init; }
+        public int Value { get; set; }
+        public bool IsEntering, IsExiting, IsComparing, IsSwapping, IsPeeking;
+    }
+}

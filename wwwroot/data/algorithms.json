@@ -79,7 +79,7 @@
   {
     "id": "binary-tree",
     "name": "Binary Search Tree",
-    "category": "Data Structures",
+    "category": "Trees",
     "description": "A hierarchical structure where each node has at most two children, keeping left subtree values smaller and right subtree values larger.",
     "difficulty": "Medium",
     "timeComplexity": "Average O(log n)",
@@ -105,6 +105,49 @@
       "Traversal (BFS/DFS)": "O(V + E)",
       "Check adjacency (matrix)": "O(1)",
       "Check adjacency (list)": "O(degree)"
+    }
+  },
+  {
+    "id": "avl-tree",
+    "name": "AVL Tree",
+    "category": "Trees",
+    "description": "A self-balancing BST that tracks balance factors and performs rotations after insertions to guarantee O(log n) height at all times.",
+    "difficulty": "Hard",
+    "timeComplexity": "O(log n)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Search": "O(log n)",
+      "Insert": "O(log n)",
+      "Rotation": "O(1)"
+    }
+  },
+  {
+    "id": "binary-heap",
+    "name": "Binary Heap",
+    "category": "Trees",
+    "description": "A complete binary tree stored as an array where every parent is ≤ its children (min-heap). Enables O(log n) insert and O(log n) extract-min.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(log n) insert/extract",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Peek (min)": "O(1)",
+      "Insert": "O(log n)",
+      "Extract-min": "O(log n)",
+      "Build heap": "O(n)"
+    }
+  },
+  {
+    "id": "trie",
+    "name": "Trie",
+    "category": "Trees",
+    "description": "A tree where each node represents one character. Paths from root to end-marked nodes spell stored words, enabling O(m) prefix search independent of dictionary size.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(m) per operation",
+    "spaceComplexity": "O(m · n)",
+    "operations": {
+      "Insert": "O(m)",
+      "Search": "O(m)",
+      "Starts-with": "O(m)"
     }
   },
   {

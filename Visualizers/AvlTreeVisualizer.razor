@@ -1,0 +1,204 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 tree-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: AVL Tree — self-balancing insertions</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">
+        Each node shows its balance factor (left height − right height). When |BF| exceeds 1 the tree rotates to restore balance. Watch the nodes slide into their new positions.
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudNumericField T="int?" @bind-Value="_input" Label="Value" Variant="Variant.Outlined"
+                         Margin="Margin.Dense" Style="max-width:100px" Disabled="_busy" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Insert" Disabled="_busy">Insert</MudButton>
+        <MudButton Variant="Variant.Outlined" OnClick="Rnd" Disabled="_busy">Random</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_busy">Reset</MudButton>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Nodes: @_count &nbsp; H: @_height</MudText>
+    </div>
+
+    @if (_status is not null)
+    {
+        <div class="avl-status mb-3">@_status</div>
+    }
+
+    <div class="tree-frame" style="height:@(Math.Max(1, _height) * LH + 40)px">
+        @if (_root is null)
+        {
+            <div class="tree-empty">empty — insert values and watch rotations restore balance</div>
+        }
+        else
+        {
+            var ps = Layout();
+            <svg class="tree-edges" width="100%" height="100%" preserveAspectRatio="none">
+                @foreach (var p in ps.Where(p => p.N.Parent is not null))
+                {
+                    var par = ps.First(x => x.N == p.N.Parent);
+                    <line x1="@par.X.ToString(Inv)%" y1="@par.Y"
+                          x2="@p.X.ToString(Inv)%"   y2="@p.Y"
+                          class="tree-edge @(p.N.OnPath || p.N.IsRotating ? "active" : "")" />
+                }
+            </svg>
+            @foreach (var p in ps)
+            {
+                <div class="tree-node avl-node @NC(p.N)" style="left:@p.X.ToString(Inv)%; top:@(p.Y - R)px" @key="p.N.Id">
+                    <span class="avl-val">@p.N.Value</span>
+                    <span class="avl-bf @(Math.Abs(p.N.BF) > 1 ? "bf-bad" : "")">@(p.N.BF > 0 ? "+" : "")@p.N.BF</span>
+                </div>
+            }
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private const int LH = 80, R = 22;
+    private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    private AN? _root;
+    private int _id, _count, _height;
+    private int? _input;
+    private string? _status;
+    private bool _busy;
+    private readonly Random _rng = new();
+
+    private async Task Insert() { var v = _input ?? _rng.Next(1, 100); _input = null; await DoInsert(v); }
+    private Task Rnd() => DoInsert(_rng.Next(1, 100));
+
+    private async Task DoInsert(int value)
+    {
+        _busy = true; _status = null; ClearAll(_root);
+
+        if (_root is null)
+        {
+            _root = new AN { Id = _id++, Value = value, IsEntering = true };
+            _count++; Recalc(); StateHasChanged();
+            await Task.Delay(300); _root.IsEntering = false; _busy = false; return;
+        }
+
+        // BST insert with path animation
+        AN? cur = _root, parent = null; bool goLeft = false;
+        while (cur is not null)
+        {
+            cur.OnPath = true; StateHasChanged(); await Task.Delay(220);
+            if (value == cur.Value) { ClearAll(_root); _busy = false; return; }
+            parent = cur; goLeft = value < cur.Value;
+            cur.OnPath = false;
+            cur = goLeft ? cur.Left : cur.Right;
+        }
+        var node = new AN { Id = _id++, Value = value, Parent = parent, IsEntering = true };
+        if (goLeft) parent!.Left = node; else parent!.Right = node;
+        _count++; ClearAll(_root); Recalc(); StateHasChanged();
+        await Task.Delay(250); node.IsEntering = false;
+
+        // Rebalance walk
+        await Rebalance(parent);
+        Recalc(); _busy = false;
+    }
+
+    private async Task Rebalance(AN? node)
+    {
+        while (node is not null)
+        {
+            UpdateH(node);
+            var bf = node.BF;
+            if (Math.Abs(bf) <= 1) { node = node.Parent; continue; }
+
+            node.IsRotating = true;
+            if (bf > 1)
+            {
+                if (node.Left!.BF < 0)
+                {
+                    node.Left.IsRotating = true; StateHasChanged(); await Task.Delay(350);
+                    _status = "Left-Right case → rotate left on left child, then right";
+                    RotateLeft(node.Left); node.Left.IsRotating = false;
+                }
+                else { _status = "Left-Left case → rotate right"; }
+                StateHasChanged(); await Task.Delay(350);
+                node = RotateRight(node);
+            }
+            else
+            {
+                if (node.Right!.BF > 0)
+                {
+                    node.Right.IsRotating = true; StateHasChanged(); await Task.Delay(350);
+                    _status = "Right-Left case → rotate right on right child, then left";
+                    RotateRight(node.Right); node.Right.IsRotating = false;
+                }
+                else { _status = "Right-Right case → rotate left"; }
+                StateHasChanged(); await Task.Delay(350);
+                node = RotateLeft(node);
+            }
+            node.IsRotating = false;
+            ClearRotating(node);
+            Recalc(); StateHasChanged(); await Task.Delay(400);
+            node = node.Parent;
+        }
+    }
+
+    private AN RotateRight(AN y)
+    {
+        var x = y.Left!;
+        y.Left = x.Right; if (x.Right is not null) x.Right.Parent = y;
+        x.Parent = y.Parent;
+        if (y.Parent is null) _root = x;
+        else if (y.Parent.Left == y) y.Parent.Left = x; else y.Parent.Right = x;
+        x.Right = y; y.Parent = x;
+        UpdateH(y); UpdateH(x); return x;
+    }
+
+    private AN RotateLeft(AN x)
+    {
+        var y = x.Right!;
+        x.Right = y.Left; if (y.Left is not null) y.Left.Parent = x;
+        y.Parent = x.Parent;
+        if (x.Parent is null) _root = y;
+        else if (x.Parent.Left == x) x.Parent.Left = y; else x.Parent.Right = y;
+        y.Left = x; x.Parent = y;
+        UpdateH(x); UpdateH(y); return y;
+    }
+
+    private static void UpdateH(AN n) => n.Height = 1 + Math.Max(n.Left?.Height ?? 0, n.Right?.Height ?? 0);
+
+    private void Reset() { _root = null; _id = _count = _height = 0; _input = null; _status = null; }
+
+    private static void ClearAll(AN? n)
+    {
+        if (n is null) return;
+        n.OnPath = n.IsEntering = n.IsRotating = false;
+        ClearAll(n.Left); ClearAll(n.Right);
+    }
+
+    private static void ClearRotating(AN? n) { if (n is null) return; n.IsRotating = false; ClearRotating(n.Left); ClearRotating(n.Right); }
+
+    private List<APos> Layout()
+    {
+        var list = new List<APos>(); var slot = 0;
+        void Go(AN? n, int d) { if (n is null) return; Go(n.Left, d + 1); list.Add(new APos { N = n, Slot = slot++, D = d }); Go(n.Right, d + 1); }
+        Go(_root, 0);
+        var total = Math.Max(1, list.Count);
+        foreach (var p in list) { p.X = (p.Slot + 0.5) / total * 100.0; p.Y = p.D * LH + R + 8; }
+        return list;
+    }
+
+    private void Recalc() => _height = H(_root);
+    private static int H(AN? n) => n is null ? 0 : 1 + Math.Max(H(n.Left), H(n.Right));
+
+    private static string NC(AN n)
+    {
+        if (n.IsRotating) return "rotating";
+        if (n.OnPath)     return "on-path";
+        if (n.IsEntering) return "entering";
+        return "";
+    }
+
+    private sealed class AN
+    {
+        public int Id { get; init; }
+        public int Value { get; set; }
+        public int Height { get; set; } = 1;
+        public AN? Left { get; set; } public AN? Right { get; set; } public AN? Parent { get; set; }
+        public bool OnPath, IsEntering, IsRotating;
+        public int BF => (Left?.Height ?? 0) - (Right?.Height ?? 0);
+    }
+
+    private sealed class APos { public AN N { get; init; } = null!; public int Slot, D; public double X, Y; }
+}
