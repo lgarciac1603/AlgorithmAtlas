@@ -1,0 +1,240 @@
+[
+  {
+    "id": "array",
+    "name": "Array",
+    "category": "Data Structures",
+    "description": "A fixed-size collection of elements stored in contiguous memory and accessed by index.",
+    "difficulty": "Easy",
+    "timeComplexity": "Access O(1)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Access": "O(1)",
+      "Search": "O(n)",
+      "Insert (end)": "O(1) amortized",
+      "Insert (middle)": "O(n)",
+      "Delete": "O(n)"
+    }
+  },
+  {
+    "id": "linked-list",
+    "name": "Linked List",
+    "category": "Data Structures",
+    "description": "A linear collection of nodes where each node points to the next, allowing efficient insertion and removal.",
+    "difficulty": "Easy",
+    "timeComplexity": "Access O(n)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Access": "O(n)",
+      "Search": "O(n)",
+      "Insert (head)": "O(1)",
+      "Insert (tail)": "O(1) with tail pointer",
+      "Delete": "O(1) with reference"
+    }
+  },
+  {
+    "id": "stack",
+    "name": "Stack",
+    "category": "Data Structures",
+    "description": "A LIFO (Last-In, First-Out) collection where elements are added and removed from the same end.",
+    "difficulty": "Easy",
+    "timeComplexity": "Push/Pop O(1)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Push": "O(1)",
+      "Pop": "O(1)",
+      "Peek": "O(1)",
+      "Search": "O(n)"
+    }
+  },
+  {
+    "id": "queue",
+    "name": "Queue",
+    "category": "Data Structures",
+    "description": "A FIFO (First-In, First-Out) collection where elements are added at the rear and removed from the front.",
+    "difficulty": "Easy",
+    "timeComplexity": "Enqueue/Dequeue O(1)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Enqueue": "O(1)",
+      "Dequeue": "O(1)",
+      "Peek": "O(1)",
+      "Search": "O(n)"
+    }
+  },
+  {
+    "id": "hash-table",
+    "name": "Hash Table",
+    "category": "Data Structures",
+    "description": "A structure that maps keys to values using a hash function for near-constant-time lookups.",
+    "difficulty": "Medium",
+    "timeComplexity": "Average O(1)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Insert (avg)": "O(1)",
+      "Lookup (avg)": "O(1)",
+      "Delete (avg)": "O(1)",
+      "Insert/Lookup (worst)": "O(n)"
+    }
+  },
+  {
+    "id": "binary-tree",
+    "name": "Binary Search Tree",
+    "category": "Trees",
+    "description": "A hierarchical structure where each node has at most two children, keeping left subtree values smaller and right subtree values larger.",
+    "difficulty": "Medium",
+    "timeComplexity": "Average O(log n)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Search (avg)": "O(log n)",
+      "Insert (avg)": "O(log n)",
+      "Delete (avg)": "O(log n)",
+      "Search (worst)": "O(n)"
+    }
+  },
+  {
+    "id": "graph",
+    "name": "Graph",
+    "category": "Data Structures",
+    "description": "A set of nodes (vertices) connected by edges, used to model networks, relationships, and paths.",
+    "difficulty": "Medium",
+    "timeComplexity": "Traversal O(V + E)",
+    "spaceComplexity": "O(V + E)",
+    "operations": {
+      "Add vertex": "O(1)",
+      "Add edge": "O(1)",
+      "Traversal (BFS/DFS)": "O(V + E)",
+      "Check adjacency (matrix)": "O(1)",
+      "Check adjacency (list)": "O(degree)"
+    }
+  },
+  {
+    "id": "avl-tree",
+    "name": "AVL Tree",
+    "category": "Trees",
+    "description": "A self-balancing BST that tracks balance factors and performs rotations after insertions to guarantee O(log n) height at all times.",
+    "difficulty": "Hard",
+    "timeComplexity": "O(log n)",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Search": "O(log n)",
+      "Insert": "O(log n)",
+      "Rotation": "O(1)"
+    }
+  },
+  {
+    "id": "binary-heap",
+    "name": "Binary Heap",
+    "category": "Trees",
+    "description": "A complete binary tree stored as an array where every parent is ≤ its children (min-heap). Enables O(log n) insert and O(log n) extract-min.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(log n) insert/extract",
+    "spaceComplexity": "O(n)",
+    "operations": {
+      "Peek (min)": "O(1)",
+      "Insert": "O(log n)",
+      "Extract-min": "O(log n)",
+      "Build heap": "O(n)"
+    }
+  },
+  {
+    "id": "trie",
+    "name": "Trie",
+    "category": "Trees",
+    "description": "A tree where each node represents one character. Paths from root to end-marked nodes spell stored words, enabling O(m) prefix search independent of dictionary size.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(m) per operation",
+    "spaceComplexity": "O(m · n)",
+    "operations": {
+      "Insert": "O(m)",
+      "Search": "O(m)",
+      "Starts-with": "O(m)"
+    }
+  },
+  {
+    "id": "skip-list",
+    "name": "Skip List",
+    "category": "Data Structures",
+    "description": "A probabilistic multi-level linked list where higher levels act as express lanes, giving O(log n) expected search, insert, and delete without needing rotations.",
+    "difficulty": "Hard",
+    "timeComplexity": "O(log n) expected",
+    "spaceComplexity": "O(n log n) expected",
+    "operations": {
+      "Search (avg)": "O(log n)",
+      "Insert (avg)": "O(log n)",
+      "Delete (avg)": "O(log n)",
+      "Search (worst)": "O(n)"
+    }
+  },
+  {
+    "id": "bubble-sort",
+    "name": "Bubble Sort",
+    "category": "Sorting",
+    "description": "Repeatedly swaps adjacent elements that are out of order until the list is sorted.",
+    "difficulty": "Easy",
+    "timeComplexity": "O(n²)",
+    "spaceComplexity": "O(1)"
+  },
+  {
+    "id": "selection-sort",
+    "name": "Selection Sort",
+    "category": "Sorting",
+    "description": "Repeatedly selects the minimum element from the unsorted portion and moves it to the front.",
+    "difficulty": "Easy",
+    "timeComplexity": "O(n²)",
+    "spaceComplexity": "O(1)"
+  },
+  {
+    "id": "insertion-sort",
+    "name": "Insertion Sort",
+    "category": "Sorting",
+    "description": "Builds the sorted list one element at a time by inserting each value into its correct position among the already-sorted elements.",
+    "difficulty": "Easy",
+    "timeComplexity": "O(n²)",
+    "spaceComplexity": "O(1)"
+  },
+  {
+    "id": "merge-sort",
+    "name": "Merge Sort",
+    "category": "Sorting",
+    "description": "A divide-and-conquer algorithm that splits the list in half, sorts each half, then merges them back together in order.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(n log n)",
+    "spaceComplexity": "O(n)"
+  },
+  {
+    "id": "quick-sort",
+    "name": "Quick Sort",
+    "category": "Sorting",
+    "description": "A divide-and-conquer algorithm that partitions the list around a pivot, then recursively sorts the partitions in place.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(n log n) avg",
+    "spaceComplexity": "O(log n)"
+  },
+  {
+    "id": "heap-sort",
+    "name": "Heap Sort",
+    "category": "Sorting",
+    "description": "Builds a max-heap from the list, then repeatedly extracts the largest element to the end to produce a sorted array in place.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(n log n)",
+    "spaceComplexity": "O(1)"
+  },
+  {
+    "id": "counting-sort",
+    "name": "Counting Sort",
+    "category": "Sorting",
+    "description": "Counts occurrences of each value and uses prefix sums to place every element directly into its final position — no comparisons needed.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(n + k)",
+    "spaceComplexity": "O(n + k)"
+  },
+  {
+    "id": "radix-sort",
+    "name": "Radix Sort",
+    "category": "Sorting",
+    "description": "Sorts integers digit by digit from least to most significant, using a stable counting sort at each position to achieve linear time on fixed-width keys.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(d · (n + k))",
+    "spaceComplexity": "O(n + k)"
+  }
+]

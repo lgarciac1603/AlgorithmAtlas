@@ -1,0 +1,178 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 linkedlist-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Add, Remove &amp; Search nodes</MudText>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">
+        Each node stores a value and a pointer to the next node. Add or remove at the head or tail in O(1). Search must traverse node by node — watch the step counter climb.
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-3">
+        <MudTextField T="string" @bind-Value="_inputValue" Label="Value" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Style="max-width: 120px" Disabled="_isAnimating" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddHead" Disabled="_isAnimating">Add head</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="AddTail" Disabled="_isAnimating">Add tail</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="RemoveHead"
+                   Disabled="@(_nodes.Count == 0 || _isAnimating)">Remove head</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="RemoveTail"
+                   Disabled="@(_nodes.Count == 0 || _isAnimating)">Remove tail</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_isAnimating">Reset</MudButton>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Length: @_nodes.Count</MudText>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudTextField T="string" @bind-Value="_searchValue" Label="Search" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Style="max-width: 140px" Disabled="_isAnimating" />
+        <MudButton Variant="Variant.Outlined" Color="Color.Info" OnClick="Search"
+                   Disabled="@(_nodes.Count == 0 || _isAnimating)">Search</MudButton>
+        @if (_searchResult is not null)
+        {
+            <MudText Typo="Typo.body2" Class="@(_searchFound ? "result-found" : "mud-text-secondary")">
+                @_searchResult
+            </MudText>
+        }
+    </div>
+
+    <div class="list-label">Singly linked list (head → … → null)</div>
+    <div class="list-frame">
+        <div class="list-anchor">head</div>
+        @if (_nodes.Count == 0)
+        {
+            <div class="list-arrow">→</div>
+            <div class="list-null">null</div>
+        }
+        @for (var i = 0; i < _nodes.Count; i++)
+        {
+            var node = _nodes[i];
+            var isHead = i == 0;
+            var isTail = i == _nodes.Count - 1;
+            <div class="list-arrow">→</div>
+            <div class="list-node @NodeClass(node, isHead, isTail)" @key="node.Id">
+                <span class="node-value">@node.Value</span>
+                <span class="node-next">next</span>
+            </div>
+            @if (isTail)
+            {
+                <div class="list-arrow">→</div>
+                <div class="list-null">null</div>
+            }
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private readonly List<ListNode> _nodes = [];
+    private int _nextId;
+    private string _inputValue = "";
+    private bool _isAnimating;
+    private string _searchValue = "";
+    private string? _searchResult;
+    private bool _searchFound;
+
+    private Task AddHead() => Add(atHead: true);
+    private Task AddTail() => Add(atHead: false);
+
+    private async Task Add(bool atHead)
+    {
+        _isAnimating = true;
+        ClearSearch();
+        var value = string.IsNullOrWhiteSpace(_inputValue) ? (_nextId + 1).ToString() : _inputValue.Trim();
+        var node = new ListNode { Id = _nextId++, Value = value, IsEntering = true };
+        if (atHead) _nodes.Insert(0, node);
+        else _nodes.Add(node);
+        _inputValue = "";
+        StateHasChanged();
+        await Task.Delay(250);
+        node.IsEntering = false;
+        _isAnimating = false;
+    }
+
+    private async Task RemoveHead()
+    {
+        if (_nodes.Count == 0) return;
+        _isAnimating = true;
+        ClearSearch();
+        _nodes[0].IsExiting = true;
+        StateHasChanged();
+        await Task.Delay(250);
+        _nodes.RemoveAt(0);
+        _isAnimating = false;
+    }
+
+    private async Task RemoveTail()
+    {
+        if (_nodes.Count == 0) return;
+        _isAnimating = true;
+        ClearSearch();
+        _nodes[^1].IsExiting = true;
+        StateHasChanged();
+        await Task.Delay(250);
+        _nodes.RemoveAt(_nodes.Count - 1);
+        _isAnimating = false;
+    }
+
+    private async Task Search()
+    {
+        if (_nodes.Count == 0 || string.IsNullOrWhiteSpace(_searchValue)) return;
+        _isAnimating = true;
+        ClearSearch();
+        var target = _searchValue.Trim();
+        for (var i = 0; i < _nodes.Count; i++)
+        {
+            _nodes[i].IsScanning = true;
+            StateHasChanged();
+            await Task.Delay(240);
+            if (_nodes[i].Value == target)
+            {
+                _nodes[i].IsScanning = false;
+                _nodes[i].IsFound = true;
+                _searchFound = true;
+                _searchResult = $"Found at node {i} — {i + 1} step{(i == 0 ? "" : "s")}";
+                _isAnimating = false;
+                return;
+            }
+            _nodes[i].IsScanning = false;
+            StateHasChanged();
+            await Task.Delay(80);
+        }
+        _searchFound = false;
+        _searchResult = $"Not found — {_nodes.Count} steps";
+        _isAnimating = false;
+    }
+
+    private void ClearSearch()
+    {
+        foreach (var n in _nodes) { n.IsScanning = false; n.IsFound = false; }
+        _searchResult = null;
+        _searchFound = false;
+    }
+
+    private void Reset()
+    {
+        _nodes.Clear();
+        _nextId = 0;
+        ClearSearch();
+    }
+
+    private static string NodeClass(ListNode n, bool isHead, bool isTail)
+    {
+        var cls = "";
+        if (n.IsFound) cls += " found";
+        else if (n.IsScanning) cls += " scanning";
+        if (n.IsExiting) cls += " exiting";
+        if (n.IsEntering) cls += " entering";
+        if (isHead) cls += " head";
+        if (isTail && !isHead) cls += " tail";
+        return cls.TrimStart();
+    }
+
+    private sealed class ListNode
+    {
+        public int Id { get; init; }
+        public string Value { get; init; } = "";
+        public bool IsExiting { get; set; }
+        public bool IsEntering { get; set; }
+        public bool IsScanning { get; set; }
+        public bool IsFound { get; set; }
+    }
+}

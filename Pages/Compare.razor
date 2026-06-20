@@ -1,0 +1,321 @@
+@page "/compare"
+@using AlgorithmAtlas.Models.Sorting
+@using AlgorithmAtlas.Services.Sorting
+@using AlgorithmAtlas.Visualizers
+@inject SoundService Sound
+
+<PageTitle>Sort Race — Compare sorting algorithms — AlgorithmAtlas</PageTitle>
+
+<MudText Typo="Typo.h3" Class="mb-1">Sorting Race</MudText>
+<MudText Typo="Typo.body1" Class="mud-text-secondary mb-6">
+    Push sorting algorithms onto the comparison stack, then hit <strong>Run</strong> once to race them all
+    on the <em>same</em> set of numbers. Watch how each works, who finishes with the least work (time),
+    and who uses the least extra memory (resources).
+</MudText>
+
+<MudGrid>
+    <!-- ============ LEFT: dataset + algorithm stack ============ -->
+    <MudItem xs="12" md="4">
+        <MudPaper Class="pa-4 mb-4" Outlined="true">
+            <MudText Typo="Typo.subtitle1" Class="mb-2">1 · Number set</MudText>
+            <div class="d-flex align-center gap-2 mb-2">
+                <MudSlider T="int" @bind-Value="_size" Min="6" Max="48" Step="1" Disabled="_running">
+                    Size: @_size
+                </MudSlider>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                <MudButton Size="Size.Small" Variant="Variant.Filled" OnClick="@(() => Generate(DataShape.Random))" Disabled="_running">Random</MudButton>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="@(() => Generate(DataShape.Reversed))" Disabled="_running">Reversed</MudButton>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="@(() => Generate(DataShape.NearlySorted))" Disabled="_running">Nearly sorted</MudButton>
+                <MudButton Size="Size.Small" Variant="Variant.Outlined" OnClick="@(() => Generate(DataShape.FewUnique))" Disabled="_running">Few unique</MudButton>
+            </div>
+            <div class="dataset-preview">
+                @string.Join(", ", _data)
+            </div>
+        </MudPaper>
+
+        <MudPaper Class="pa-4 mb-4" Outlined="true">
+            <MudText Typo="Typo.subtitle1" Class="mb-2">2 · Algorithm stack</MudText>
+            <div class="d-flex gap-2 mb-3">
+                <MudSelect T="string" @bind-Value="_pick" Label="Algorithm" Variant="Variant.Outlined"
+                           Margin="Margin.Dense" Dense="true" Disabled="_running">
+                    @foreach (var d in Available())
+                    {
+                        <MudSelectItem T="string" Value="@d.Id">@d.Name</MudSelectItem>
+                    }
+                </MudSelect>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Push"
+                           Disabled="@(_running || _pick is null)">Push</MudButton>
+            </div>
+
+            <div class="algo-stack">
+                <div class="stack-cap">top of stack — Pop removes here</div>
+                @if (_slots.Count == 0)
+                {
+                    <div class="algo-empty">empty — push an algorithm</div>
+                }
+                @for (var i = _slots.Count - 1; i >= 0; i--)
+                {
+                    var slot = _slots[i];
+                    var isTop = i == _slots.Count - 1;
+                    <div class="algo-chip @(isTop ? "top" : "")" style="border-color:@slot.Desc.Color" @key="slot.Desc.Id">
+                        <span class="dot" style="background:@slot.Desc.Color"></span>
+                        <span class="algo-chip-name">@slot.Desc.Name</span>
+                        <code>@slot.Desc.TimeComplexity</code>
+                        @if (isTop && !_running)
+                        {
+                            <MudIconButton Icon="@Icons.Material.Filled.Close" Size="Size.Small" OnClick="Pop" />
+                        }
+                    </div>
+                }
+            </div>
+        </MudPaper>
+
+        <MudPaper Class="pa-4" Outlined="true">
+            <MudText Typo="Typo.subtitle1" Class="mb-2">3 · Run</MudText>
+            <div class="d-flex align-center gap-2 mb-3">
+                <MudSlider T="int" @bind-Value="_speed" Min="5" Max="120" Step="5" Disabled="_running">
+                    Step delay: @_speed ms
+                </MudSlider>
+            </div>
+            <MudSwitch T="bool" @bind-Value="_sound" Color="Color.Primary" Class="mb-3">
+                Sound help
+            </MudSwitch>
+            <div class="d-flex gap-2">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" FullWidth="true"
+                           StartIcon="@Icons.Material.Filled.PlayArrow"
+                           OnClick="RunAll" Disabled="@(_running || _slots.Count == 0)">
+                    @(_running ? "Racing…" : "Run")
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" OnClick="ResetAll" Disabled="_running">Reset</MudButton>
+            </div>
+
+            <div class="legend mt-4">
+                <span><i class="sw cmp"></i> comparing</span>
+                <span><i class="sw swp"></i> swap / write</span>
+                <span><i class="sw pvt"></i> pivot / key</span>
+                <span><i class="sw srt"></i> sorted</span>
+            </div>
+            <MudText Typo="Typo.caption" Class="mud-text-secondary mt-2 d-block">
+                Pitch rises with each value; swaps play a sharper tone. Sound unlocks when you press Run.
+            </MudText>
+        </MudPaper>
+    </MudItem>
+
+    <!-- ============ RIGHT: races + results ============ -->
+    <MudItem xs="12" md="8">
+        @if (_results.Count == _slots.Count && _slots.Count > 0)
+        {
+            <MudPaper Class="pa-4 mb-4 results-card" Outlined="true">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Results — same @_data.Length numbers</MudText>
+                <MudSimpleTable Dense="true" Hover="true" Class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Algorithm</th>
+                            <th title="comparisons + writes — lower is faster">Work (ops)</th>
+                            <th>Comparisons</th>
+                            <th>Swaps</th>
+                            <th>Writes</th>
+                            <th title="auxiliary memory — lower is lighter">Memory</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in _results.OrderBy(r => r.Operations))
+                        {
+                            <tr>
+                                <td>@r.Name</td>
+                                <td><strong>@r.Operations</strong></td>
+                                <td>@r.Comparisons</td>
+                                <td>@r.Swaps</td>
+                                <td>@r.Writes</td>
+                                <td><code>@(Desc(r.Id)?.SpaceComplexity)</code></td>
+                                <td>
+                                    @if (r.Id == _fastestId)
+                                    {
+                                        <span class="res-badge time">⚡ fastest</span>
+                                    }
+                                    @if (r.Id == _lightestId)
+                                    {
+                                        <span class="res-badge mem">🪶 lightest</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+                <MudText Typo="Typo.caption" Class="mud-text-secondary mt-2 d-block">
+                    "Work" counts comparisons + array writes — a machine-independent stand-in for running time.
+                    "Memory" is the extra space the algorithm needs beyond the input.
+                </MudText>
+            </MudPaper>
+        }
+
+        @if (_slots.Count == 0)
+        {
+            <MudPaper Class="pa-8 text-center" Outlined="true">
+                <MudIcon Icon="@Icons.Material.Filled.Leaderboard" Size="Size.Large" Class="mud-text-secondary" />
+                <MudText Typo="Typo.body1" Class="mud-text-secondary mt-2">
+                    Push one or more algorithms onto the stack to set up a race.
+                </MudText>
+            </MudPaper>
+        }
+        else
+        {
+            <div class="race-grid">
+                @foreach (var slot in _slots)
+                {
+                    <SortVisualizer @ref="slot.Ref"
+                                    Descriptor="slot.Desc"
+                                    Data="_data"
+                                    StepDelayMs="_speed"
+                                    Sounds="_sound"
+                                    CompareMode="true"
+                                    ShowComplexity="true"
+                                    OnFinished="OnAlgoFinished"
+                                    @key="slot.Desc.Id" />
+                }
+            </div>
+        }
+    </MudItem>
+</MudGrid>
+
+@code {
+    private enum DataShape { Random, Reversed, NearlySorted, FewUnique }
+
+    private sealed class AlgoSlot
+    {
+        public SortDescriptor Desc { get; init; } = null!;
+        public SortVisualizer? Ref { get; set; }
+    }
+
+    private readonly List<AlgoSlot> _slots = [];
+    private readonly List<SortResult> _results = [];
+    private int[] _data = [];
+    private int _size = 24;
+    private int _speed = 35;
+    private bool _sound = true;
+    private bool _running;
+    private string? _pick;
+    private string? _fastestId;
+    private string? _lightestId;
+    private readonly Random _rng = new();
+
+    protected override void OnInitialized()
+    {
+        Generate(DataShape.Random);
+        // seed the stack with a classic O(n²) vs O(n log n) match-up
+        _slots.Add(new AlgoSlot { Desc = SortRegistry.Get("bubble-sort")! });
+        _slots.Add(new AlgoSlot { Desc = SortRegistry.Get("quick-sort")! });
+    }
+
+    private IEnumerable<SortDescriptor> Available() =>
+        SortRegistry.All.Where(d => _slots.All(s => s.Desc.Id != d.Id));
+
+    private static SortDescriptor? Desc(string id) => SortRegistry.Get(id);
+
+    private void Generate(DataShape shape)
+    {
+        var data = new int[_size];
+        switch (shape)
+        {
+            case DataShape.Random:
+                for (var i = 0; i < _size; i++) data[i] = _rng.Next(5, 100);
+                break;
+            case DataShape.Reversed:
+                for (var i = 0; i < _size; i++) data[i] = 100 - i * (95 / Math.Max(1, _size));
+                break;
+            case DataShape.NearlySorted:
+                for (var i = 0; i < _size; i++) data[i] = 5 + i * (90 / Math.Max(1, _size));
+                for (var k = 0; k < Math.Max(1, _size / 8); k++)
+                {
+                    int a = _rng.Next(_size), b = _rng.Next(_size);
+                    (data[a], data[b]) = (data[b], data[a]);
+                }
+                break;
+            case DataShape.FewUnique:
+                var pool = new[] { 15, 40, 65, 90 };
+                for (var i = 0; i < _size; i++) data[i] = pool[_rng.Next(pool.Length)];
+                break;
+        }
+        _data = data;
+        _results.Clear();
+        _fastestId = _lightestId = null;
+    }
+
+    private void Push()
+    {
+        if (_pick is null) return;
+        var desc = SortRegistry.Get(_pick);
+        if (desc is not null && _slots.All(s => s.Desc.Id != desc.Id))
+        {
+            _slots.Add(new AlgoSlot { Desc = desc });
+            _results.Clear();
+            _fastestId = _lightestId = null;
+        }
+        _pick = null;
+    }
+
+    private void Pop()
+    {
+        if (_slots.Count == 0) return;
+        _slots.RemoveAt(_slots.Count - 1);
+        _results.Clear();
+        _fastestId = _lightestId = null;
+    }
+
+    private async Task RunAll()
+    {
+        if (_slots.Count == 0) return;
+
+        _running = true;
+        _results.Clear();
+        _fastestId = _lightestId = null;
+        Sound.Enabled = _sound;
+        await Sound.UnlockAsync();
+        StateHasChanged();
+
+        var tasks = _slots
+            .Where(s => s.Ref is not null)
+            .Select(s => s.Ref!.RunAsync())
+            .ToList();
+
+        await Task.WhenAll(tasks);
+
+        RankResults();
+        _running = false;
+        StateHasChanged();
+    }
+
+    private void OnAlgoFinished(SortResult result)
+    {
+        _results.RemoveAll(r => r.Id == result.Id);
+        _results.Add(result);
+    }
+
+    private void RankResults()
+    {
+        if (_results.Count == 0) return;
+
+        _fastestId = _results.OrderBy(r => r.Operations).First().Id;
+        _lightestId = _results
+            .OrderBy(r => r.AuxSpaceRank)
+            .ThenBy(r => r.Operations)
+            .First().Id;
+
+        foreach (var slot in _slots)
+        {
+            slot.Ref?.MarkWinners(slot.Desc.Id == _fastestId, slot.Desc.Id == _lightestId);
+        }
+    }
+
+    private void ResetAll()
+    {
+        _results.Clear();
+        _fastestId = _lightestId = null;
+        foreach (var slot in _slots)
+        {
+            slot.Ref?.ResetView();
+        }
+    }
+}

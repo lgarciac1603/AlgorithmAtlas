@@ -1,0 +1,104 @@
+.list-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--mud-palette-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.list-frame {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 8px;
+    padding: 0.8rem;
+    min-height: 90px;
+}
+
+.list-anchor {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--mud-palette-text-secondary);
+}
+
+.list-arrow {
+    color: var(--mud-palette-text-secondary);
+    font-size: 1.1rem;
+}
+
+.list-null {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--mud-palette-text-secondary);
+    padding: 0.3rem 0.5rem;
+}
+
+.list-node {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 6px;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--mud-palette-action-default-hover);
+}
+
+.list-node.entering {
+    animation: nodeIn 250ms ease-out;
+}
+
+.list-node.exiting {
+    animation: nodeOut 250ms ease-in forwards;
+}
+
+.list-node.head {
+    border-color: var(--mud-palette-primary);
+    box-shadow: 0 0 0 1px var(--mud-palette-primary);
+}
+
+.node-value {
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+}
+
+.node-next {
+    padding: 0.5rem 0.5rem;
+    font-size: 0.6rem;
+    color: var(--mud-palette-text-secondary);
+    border-left: 1px dashed var(--mud-palette-lines-default);
+    display: flex;
+    align-items: center;
+}
+
+.list-node.scanning {
+    border-color: var(--mud-palette-warning);
+    box-shadow: 0 0 0 1px var(--mud-palette-warning);
+}
+
+.list-node.found {
+    border-color: var(--mud-palette-success);
+    box-shadow: 0 0 0 1px var(--mud-palette-success);
+}
+
+.list-node.tail {
+    border-color: var(--mud-palette-secondary);
+    box-shadow: 0 0 0 1px var(--mud-palette-secondary);
+}
+
+.result-found {
+    color: var(--mud-palette-success);
+    font-weight: 600;
+}
+
+@keyframes nodeIn {
+    from { opacity: 0; transform: translateY(-12px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes nodeOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(-12px) scale(0.9); }
+}

@@ -1,0 +1,279 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 tree-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: BST — Insert, Search, Delete, Traverse</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">
+        Build a Binary Search Tree then explore every operation. The search path lights up at each comparison.
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-2">
+        <MudNumericField T="int?" @bind-Value="_input" Label="Value" Variant="Variant.Outlined"
+                         Margin="Margin.Dense" Style="max-width:100px" Disabled="_busy" />
+        <MudButton Variant="Variant.Filled"   Color="Color.Primary" OnClick="Insert"   Disabled="_busy">Insert</MudButton>
+        <MudButton Variant="Variant.Outlined"                        OnClick="Rnd"      Disabled="_busy">Random</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Info"    OnClick="Search"   Disabled="@(_root is null || _input is null || _busy)">Search</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error"   OnClick="Delete"   Disabled="@(_root is null || _input is null || _busy)">Delete</MudButton>
+        <MudButton Variant="Variant.Text"                            OnClick="Reset"    Disabled="_busy">Reset</MudButton>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Nodes: @_count &nbsp; H: @_height</MudText>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudSelect T="string" @bind-Value="_mode" Label="Traversal" Variant="Variant.Outlined"
+                   Margin="Margin.Dense" Style="max-width:180px" Disabled="_busy">
+            <MudSelectItem Value="@("inorder")">In-order (L N R)</MudSelectItem>
+            <MudSelectItem Value="@("preorder")">Pre-order (N L R)</MudSelectItem>
+            <MudSelectItem Value="@("postorder")">Post-order (L R N)</MudSelectItem>
+            <MudSelectItem Value="@("levelorder")">Level-order (BFS)</MudSelectItem>
+        </MudSelect>
+        <MudButton Variant="Variant.Outlined" OnClick="Traverse" Disabled="@(_root is null || _busy)">Traverse</MudButton>
+        @if (_status is not null)
+        {
+            <MudText Typo="Typo.body2" Class="@(_ok ? "result-found" : "mud-text-secondary")">@_status</MudText>
+        }
+    </div>
+
+    @if (_sequence is not null)
+    {
+        <div class="traversal-sequence mb-3">@_sequence</div>
+    }
+
+    <div class="tree-frame" style="height:@(Math.Max(1, _height) * LH + 40)px">
+        @if (_root is null)
+        {
+            <div class="tree-empty">empty — insert a value to grow the tree</div>
+        }
+        else
+        {
+            var ps = Layout();
+            <svg class="tree-edges" width="100%" height="100%" preserveAspectRatio="none">
+                @foreach (var p in ps.Where(p => p.N.Parent is not null))
+                {
+                    var par = ps.First(x => x.N == p.N.Parent);
+                    <line x1="@par.X.ToString(Inv)%" y1="@par.Y"
+                          x2="@p.X.ToString(Inv)%"   y2="@p.Y"
+                          class="tree-edge @(p.N.OnPath ? "active" : "")" />
+                }
+            </svg>
+            @foreach (var p in ps)
+            {
+                <div class="tree-node @NC(p.N)" style="left:@p.X.ToString(Inv)%; top:@(p.Y - R)px" @key="p.N.Id">
+                    @p.N.Value
+                </div>
+            }
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private const int LH = 72, R = 18;
+    private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    private N? _root;
+    private int _id, _count, _height;
+    private int? _input;
+    private string _mode = "inorder";
+    private string? _sequence, _status;
+    private bool _ok, _busy;
+    private readonly Random _rng = new();
+
+    // ── Insert ───────────────────────────────────────────────────────────────
+
+    private async Task Insert() { var v = _input ?? _rng.Next(1, 100); _input = null; await DoInsert(v); }
+    private Task Rnd() => DoInsert(_rng.Next(1, 100));
+
+    private async Task DoInsert(int value)
+    {
+        _busy = true; Wipe();
+        if (_root is null)
+        {
+            _root = new N { Id = _id++, Value = value, IsEntering = true };
+            _count++; Recalc(); StateHasChanged();
+            await Task.Delay(300);
+            _root.IsEntering = false; _busy = false; return;
+        }
+        var cur = _root;
+        while (true)
+        {
+            cur.OnPath = true; StateHasChanged(); await Task.Delay(260);
+            if (value == cur.Value) { Clear(_root); _busy = false; return; }
+            if (value < cur.Value)
+            {
+                if (cur.Left  is null) { cur.Left  = Leaf(value, cur); break; }
+                cur = cur.Left;
+            }
+            else
+            {
+                if (cur.Right is null) { cur.Right = Leaf(value, cur); break; }
+                cur = cur.Right;
+            }
+        }
+        _count++; Recalc(); StateHasChanged();
+        await Task.Delay(280); Clear(_root); _busy = false;
+    }
+
+    // ── Search ───────────────────────────────────────────────────────────────
+
+    private async Task Search()
+    {
+        if (_root is null || _input is null) return;
+        var value = _input.Value; _input = null;
+        _busy = true; Wipe();
+        var steps = 0; var cur = _root;
+        while (cur is not null)
+        {
+            cur.OnPath = true; StateHasChanged(); await Task.Delay(280); steps++;
+            if (cur.Value == value)
+            {
+                cur.OnPath = false; cur.IsFound = true;
+                _status = $"Found {value} in {steps} step{(steps == 1 ? "" : "s")}"; _ok = true;
+                StateHasChanged(); _busy = false; return;
+            }
+            cur.OnPath = false; StateHasChanged(); await Task.Delay(60);
+            cur = value < cur.Value ? cur.Left : cur.Right;
+        }
+        _status = $"{value} not found — {steps} step{(steps == 1 ? "" : "s")}"; _ok = false; _busy = false;
+    }
+
+    // ── Delete ───────────────────────────────────────────────────────────────
+
+    private async Task Delete()
+    {
+        if (_root is null || _input is null) return;
+        var value = _input.Value; _input = null;
+        _busy = true; Wipe();
+        N? cur = _root;
+        while (cur is not null && cur.Value != value)
+        {
+            cur.OnPath = true; StateHasChanged(); await Task.Delay(240);
+            cur.OnPath = false; StateHasChanged();
+            cur = value < cur.Value ? cur.Left : cur.Right;
+        }
+        if (cur is null) { _status = $"{value} not found"; _ok = false; _busy = false; return; }
+        cur.IsDeleting = true; StateHasChanged(); await Task.Delay(360);
+        if (cur.Left is null && cur.Right is null)
+        {
+            Detach(cur);
+        }
+        else if (cur.Left is null || cur.Right is null)
+        {
+            var child = (cur.Left ?? cur.Right)!;
+            Splice(cur, child);
+        }
+        else
+        {
+            var succ = cur.Right;
+            while (succ.Left is not null)
+            {
+                succ.OnPath = true; StateHasChanged(); await Task.Delay(180); succ = succ.Left;
+            }
+            succ.OnPath = true; StateHasChanged(); await Task.Delay(200);
+            cur.Value = succ.Value;
+            cur.IsDeleting = false; succ.IsDeleting = true; StateHasChanged(); await Task.Delay(320);
+            Splice(succ, succ.Right);
+        }
+        _count--; Recalc(); Clear(_root);
+        _status = $"{value} deleted"; _ok = true; StateHasChanged(); _busy = false;
+    }
+
+    // ── Traverse ─────────────────────────────────────────────────────────────
+
+    private async Task Traverse()
+    {
+        if (_root is null) return;
+        _busy = true; Wipe();
+        var order = new List<N>();
+        switch (_mode)
+        {
+            case "inorder":    InOrder(_root, order);   break;
+            case "preorder":   PreOrder(_root, order);  break;
+            case "postorder":  PostOrder(_root, order); break;
+            default:           Level(_root, order);     break;
+        }
+        var visited = new List<int>();
+        foreach (var n in order)
+        {
+            n.OnPath = true; StateHasChanged(); await Task.Delay(360);
+            n.OnPath = false; n.IsTraversed = true;
+            visited.Add(n.Value);
+            _sequence = string.Join(" → ", visited);
+            StateHasChanged(); await Task.Delay(40);
+        }
+        _busy = false;
+    }
+
+    private void Reset() { _root = null; _id = _count = _height = 0; _input = null; _sequence = _status = null; }
+
+    // ── Tree helpers ─────────────────────────────────────────────────────────
+
+    private N Leaf(int v, N parent) => new() { Id = _id++, Value = v, Parent = parent, IsEntering = true, OnPath = true };
+
+    private void Detach(N n)
+    {
+        if (n.Parent is null) _root = null;
+        else if (n.Parent.Left  == n) n.Parent.Left  = null;
+        else                          n.Parent.Right = null;
+    }
+
+    private void Splice(N n, N? r)
+    {
+        if (n.Parent is null) _root = r;
+        else if (n.Parent.Left  == n) n.Parent.Left  = r;
+        else                          n.Parent.Right = r;
+        if (r is not null) r.Parent = n.Parent;
+    }
+
+    private void Wipe() { Clear(_root); _sequence = _status = null; }
+
+    private static void Clear(N? n)
+    {
+        if (n is null) return;
+        n.OnPath = n.IsEntering = n.IsFound = n.IsDeleting = n.IsTraversed = false;
+        Clear(n.Left); Clear(n.Right);
+    }
+
+    private static void InOrder(N? n, List<N> l)   { if (n is null) return; InOrder(n.Left, l); l.Add(n); InOrder(n.Right, l); }
+    private static void PreOrder(N? n, List<N> l)  { if (n is null) return; l.Add(n); PreOrder(n.Left, l); PreOrder(n.Right, l); }
+    private static void PostOrder(N? n, List<N> l) { if (n is null) return; PostOrder(n.Left, l); PostOrder(n.Right, l); l.Add(n); }
+
+    private static void Level(N root, List<N> l)
+    {
+        var q = new Queue<N>(); q.Enqueue(root);
+        while (q.Count > 0) { var n = q.Dequeue(); l.Add(n); if (n.Left is not null) q.Enqueue(n.Left); if (n.Right is not null) q.Enqueue(n.Right); }
+    }
+
+    // ── Layout ───────────────────────────────────────────────────────────────
+
+    private List<Pos> Layout()
+    {
+        var list = new List<Pos>(); var slot = 0;
+        void Go(N? n, int d) { if (n is null) return; Go(n.Left, d + 1); list.Add(new Pos { N = n, Slot = slot++, D = d }); Go(n.Right, d + 1); }
+        Go(_root, 0);
+        var total = Math.Max(1, list.Count);
+        foreach (var p in list) { p.X = (p.Slot + 0.5) / total * 100.0; p.Y = p.D * LH + R + 8; }
+        return list;
+    }
+
+    private void Recalc() => _height = H(_root);
+    private static int H(N? n) => n is null ? 0 : 1 + Math.Max(H(n.Left), H(n.Right));
+
+    private static string NC(N n)
+    {
+        if (n.IsDeleting)  return "deleting";
+        if (n.IsFound)     return "found";
+        if (n.IsTraversed) return "traversed";
+        if (n.OnPath)      return "on-path";
+        if (n.IsEntering)  return "entering";
+        return "";
+    }
+
+    private sealed class N
+    {
+        public int Id    { get; init; }
+        public int Value { get; set; }
+        public N? Left { get; set; } public N? Right { get; set; } public N? Parent { get; set; }
+        public bool OnPath, IsEntering, IsFound, IsDeleting, IsTraversed;
+    }
+
+    private sealed class Pos { public N N { get; init; } = null!; public int Slot, D; public double X, Y; }
+}

@@ -1,0 +1,118 @@
+.sl-canvas {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 8px;
+    padding: 0.8rem;
+    min-height: 60px;
+}
+
+.sl-empty {
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 1.5rem 0;
+}
+
+.sl-table {
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+}
+
+.sl-table td {
+    vertical-align: middle;
+    padding: 5px 0;
+}
+
+.sl-label {
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding-right: 0.6rem;
+    white-space: nowrap;
+    width: 1.8rem;
+}
+
+.sl-sentinel,
+.sl-null {
+    font-size: 0.78rem;
+    color: var(--mud-palette-text-secondary);
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 6px;
+    padding: 0.28rem 0.45rem;
+    text-align: center;
+}
+
+.sl-node {
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 6px;
+    padding: 0.28rem 0.55rem;
+    text-align: center;
+    background: var(--mud-palette-action-default-hover);
+    transition: border-color 0.15s, box-shadow 0.15s, color 0.15s;
+    min-width: 2.6rem;
+}
+
+/* Passthrough cell — no node at this level, just a horizontal dashed line */
+.sl-gap {
+    min-width: 2.6rem;
+    position: relative;
+}
+
+.sl-gap::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -3px;
+    right: -3px;
+    height: 1px;
+    background: var(--mud-palette-lines-default);
+    transform: translateY(-50%);
+    opacity: 0.45;
+}
+
+.sl-conn {
+    color: var(--mud-palette-text-secondary);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 0 3px;
+}
+
+/* ── Node states ──────────────────────────────────────────────── */
+
+.sl-node.scanning {
+    border-color: var(--mud-palette-warning);
+    box-shadow: 0 0 0 1px var(--mud-palette-warning);
+    color: var(--mud-palette-warning);
+}
+
+.sl-node.found {
+    border-color: var(--mud-palette-success);
+    box-shadow: 0 0 0 2px var(--mud-palette-success);
+    color: var(--mud-palette-success);
+}
+
+.sl-node.entering {
+    animation: slNodeIn 300ms ease-out;
+}
+
+.sl-node.exiting {
+    opacity: 0;
+    transform: scale(0.75);
+    transition: opacity 260ms ease-in, transform 260ms ease-in;
+}
+
+/* ── Status text colours ──────────────────────────────────────── */
+
+.sl-ok   { color: var(--mud-palette-success); font-weight: 600; }
+.sl-miss { color: var(--mud-palette-text-secondary); }
+
+@keyframes slNodeIn {
+    from { opacity: 0; transform: scale(0.7); }
+    to   { opacity: 1; transform: scale(1); }
+}

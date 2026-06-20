@@ -1,0 +1,101 @@
+.sort-visualizer {
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem 0.75rem;
+    background: var(--mud-palette-surface);
+    transition: box-shadow 250ms ease, border-color 250ms ease;
+}
+
+.sort-visualizer.finished {
+    border-color: var(--mud-palette-success);
+    box-shadow: 0 0 0 1px var(--mud-palette-success);
+}
+
+.sv-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.sv-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.sv-spacer {
+    flex: 1;
+}
+
+.sv-metric {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--mud-palette-text-secondary);
+    background: var(--mud-palette-action-default-hover);
+    border-radius: 4px;
+    padding: 0.1rem 0.35rem;
+}
+
+.sv-metric.ops {
+    color: var(--mud-palette-primary);
+    font-weight: 600;
+}
+
+.sv-badge {
+    font-size: 0.66rem;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    animation: badgePop 300ms ease-out;
+}
+
+.sv-badge.time {
+    background: rgba(66, 165, 245, 0.18);
+    color: var(--mud-palette-info);
+}
+
+.sv-badge.mem {
+    background: rgba(102, 187, 106, 0.18);
+    color: var(--mud-palette-success);
+}
+
+.sv-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 160px;
+    padding: 4px;
+    border-radius: 6px;
+    background: var(--mud-palette-background-grey, var(--mud-palette-action-default-hover));
+}
+
+.sv-bar {
+    flex: 1 1 0;
+    min-width: 2px;
+    border-radius: 2px 2px 0 0;
+    transition: height 80ms linear, background 80ms linear;
+}
+
+.sv-bar.compare,
+.sv-bar.swap,
+.sv-bar.pivot {
+    transform: scaleY(1.02);
+}
+
+.sv-foot {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.72rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.sv-foot code {
+    font-size: 0.72rem;
+}
+
+@keyframes badgePop {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1); }
+}

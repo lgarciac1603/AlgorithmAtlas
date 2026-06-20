@@ -1,0 +1,246 @@
+@namespace AlgorithmAtlas.Visualizers
+@using AlgorithmAtlas.Models.Sorting
+@using AlgorithmAtlas.Services.Sorting
+@inject SoundService Sound
+@implements IDisposable
+
+<div class="sort-visualizer @(_finished ? "finished" : "")">
+    <div class="sv-header">
+        <span class="sv-name" style="color:@Descriptor.Color">@Descriptor.Name</span>
+        @if (_winnerTime)
+        {
+            <span class="sv-badge time">⚡ Fastest</span>
+        }
+        @if (_winnerMemory)
+        {
+            <span class="sv-badge mem">🪶 Lightest</span>
+        }
+        <span class="sv-spacer"></span>
+        <span class="sv-metric" title="Comparisons">@_metrics.Comparisons cmp</span>
+        <span class="sv-metric" title="Swaps + writes">@_metrics.Writes wr</span>
+        <span class="sv-metric ops" title="Comparisons + writes (work done)">@_metrics.Operations ops</span>
+    </div>
+
+    <div class="sv-bars" style="--bar-count:@(_working?.Length ?? 0)">
+        @if (_working is not null)
+        {
+            @for (var i = 0; i < _working.Length; i++)
+            {
+                var v = _working[i];
+                var state = _state[i];
+                <div class="sv-bar @StateClass(state)"
+                     style="height:@(Height(v))%; background:@BarColor(state)">
+                </div>
+            }
+        }
+    </div>
+
+    @if (ShowComplexity)
+    {
+        <div class="sv-foot">
+            <span>time <code>@Descriptor.TimeComplexity</code></span>
+            <span>space <code>@Descriptor.SpaceComplexity</code></span>
+            <span>@(Descriptor.Stable ? "stable" : "unstable")</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public SortDescriptor Descriptor { get; set; } = null!;
+    [Parameter, EditorRequired] public int[] Data { get; set; } = [];
+    [Parameter] public int StepDelayMs { get; set; } = 40;
+    [Parameter] public bool Sounds { get; set; } = true;
+    /// <summary>In compare mode tones fire only on swaps, to avoid a wall of sound.</summary>
+    [Parameter] public bool CompareMode { get; set; }
+    [Parameter] public bool ShowComplexity { get; set; } = true;
+    [Parameter] public EventCallback<SortResult> OnFinished { get; set; }
+
+    private int[]? _working;
+    private BarState[] _state = [];
+    private int _max = 1;
+    private readonly SortMetrics _metrics = new();
+    private bool _running;
+    private bool _finished;
+    private CancellationTokenSource? _cts;
+
+    private bool _winnerTime;
+    private bool _winnerMemory;
+
+    private enum BarState { Idle, Compare, Swap, Pivot, Sorted }
+
+    public bool IsRunning => _running;
+
+    protected override void OnInitialized() => LoadData();
+
+    private void LoadData()
+    {
+        _working = (int[])Data.Clone();
+        _state = new BarState[_working.Length];
+        _max = _working.Length == 0 ? 1 : _working.Max();
+        _metrics.Reset();
+        _finished = false;
+    }
+
+    /// <summary>Reset to the initial dataset without running.</summary>
+    public void ResetView()
+    {
+        Cancel();
+        LoadData();
+        StateHasChanged();
+    }
+
+    /// <summary>Replay the algorithm on the current dataset, animating each step.</summary>
+    public async Task RunAsync()
+    {
+        Cancel();
+        LoadData();
+        _running = true;
+        _winnerTime = _winnerMemory = false;
+        var token = (_cts = new CancellationTokenSource()).Token;
+
+        if (Sounds)
+        {
+            await Sound.UnlockAsync();
+        }
+
+        // Materialize the trace up front so timing reflects animation only.
+        var steps = Descriptor.Run(Data).ToList();
+
+        try
+        {
+            foreach (var step in steps)
+            {
+                if (token.IsCancellationRequested) return;
+                ApplyTransient(step);
+                _metrics.Apply(step);
+                await PlaySound(step);
+                StateHasChanged();
+                await Task.Delay(StepDelayMs, token);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        // settle: everything sorted
+        for (var i = 0; i < _state.Length; i++)
+        {
+            _state[i] = BarState.Sorted;
+        }
+        _running = false;
+        _finished = true;
+        StateHasChanged();
+
+        if (Sounds)
+        {
+            await Sound.FinishChimeAsync();
+        }
+
+        await OnFinished.InvokeAsync(new SortResult(
+            Descriptor.Id, Descriptor.Name,
+            _metrics.Comparisons, _metrics.Swaps, _metrics.Writes,
+            _metrics.Operations, steps.Count, Descriptor.AuxSpaceRank));
+    }
+
+    public void MarkWinners(bool time, bool memory)
+    {
+        _winnerTime = time;
+        _winnerMemory = memory;
+        StateHasChanged();
+    }
+
+    public void Cancel()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+        _running = false;
+    }
+
+    private void ApplyTransient(SortStep step)
+    {
+        // clear last step's transient highlights, keep Sorted
+        for (var i = 0; i < _state.Length; i++)
+        {
+            if (_state[i] != BarState.Sorted)
+            {
+                _state[i] = BarState.Idle;
+            }
+        }
+
+        switch (step.Kind)
+        {
+            case SortStepKind.Compare:
+                Set(step.I, BarState.Compare);
+                Set(step.J, BarState.Compare);
+                break;
+            case SortStepKind.Swap:
+                (_working![step.I], _working[step.J]) = (_working[step.J], _working[step.I]);
+                Set(step.I, BarState.Swap);
+                Set(step.J, BarState.Swap);
+                break;
+            case SortStepKind.Overwrite:
+                _working![step.I] = step.Value;
+                Set(step.I, BarState.Swap);
+                break;
+            case SortStepKind.Pivot:
+                Set(step.I, BarState.Pivot);
+                break;
+            case SortStepKind.MarkSorted:
+                Set(step.I, BarState.Sorted);
+                break;
+        }
+    }
+
+    private void Set(int i, BarState s)
+    {
+        if (i >= 0 && i < _state.Length && _state[i] != BarState.Sorted)
+        {
+            _state[i] = s;
+        }
+    }
+
+    private async Task PlaySound(SortStep step)
+    {
+        if (!Sounds) return;
+        var normalized = (double)0;
+        switch (step.Kind)
+        {
+            case SortStepKind.Swap:
+                normalized = _working![step.I] / (double)_max;
+                await Sound.ToneAsync(normalized, "swap", 45);
+                break;
+            case SortStepKind.Overwrite:
+                normalized = step.Value / (double)_max;
+                await Sound.ToneAsync(normalized, "swap", 45);
+                break;
+            case SortStepKind.Compare when !CompareMode:
+                normalized = _working![step.I] / (double)_max;
+                await Sound.ToneAsync(normalized, "compare", 35);
+                break;
+        }
+    }
+
+    private int Height(int v) => (int)Math.Round(8 + v / (double)_max * 92);
+
+    private static string StateClass(BarState s) => s switch
+    {
+        BarState.Compare => "compare",
+        BarState.Swap => "swap",
+        BarState.Pivot => "pivot",
+        BarState.Sorted => "sorted",
+        _ => "idle"
+    };
+
+    private string BarColor(BarState s) => s switch
+    {
+        BarState.Compare => "var(--mud-palette-warning)",
+        BarState.Swap => "var(--mud-palette-error)",
+        BarState.Pivot => "var(--mud-palette-info)",
+        BarState.Sorted => "var(--mud-palette-success)",
+        _ => Descriptor.Color
+    };
+
+    public void Dispose() => Cancel();
+}

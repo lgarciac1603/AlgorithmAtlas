@@ -1,0 +1,31 @@
+.tree-node.rotating {
+    border-color: var(--mud-palette-warning);
+    box-shadow: 0 0 0 2px var(--mud-palette-warning);
+    color: var(--mud-palette-warning);
+}
+
+.avl-node {
+    flex-direction: column;
+    gap: 0;
+    width: 44px;
+    height: 44px;
+}
+
+.avl-val { font-size: 0.75rem; font-weight: 700; line-height: 1.2; }
+
+.avl-bf {
+    font-size: 0.55rem;
+    color: var(--mud-palette-text-secondary);
+    line-height: 1;
+}
+
+.avl-bf.bf-bad { color: var(--mud-palette-error); font-weight: 700; }
+
+.avl-status {
+    font-size: 0.8rem;
+    color: var(--mud-palette-warning);
+    border: 1px solid var(--mud-palette-warning);
+    border-radius: 6px;
+    padding: 0.35rem 0.7rem;
+    display: inline-block;
+}

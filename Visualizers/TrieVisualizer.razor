@@ -1,0 +1,198 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 tree-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Trie — Insert &amp; Search words</MudText>
+    <MudText Typo="Typo.body2" Class="mb-4 mud-text-secondary">
+        Each node represents one character. Shared prefixes share nodes. Insert animates character by character; search walks the existing path.
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudTextField T="string" @bind-Value="_word" Label="Word" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Style="max-width:140px" Disabled="_busy" />
+        <MudButton Variant="Variant.Filled"   Color="Color.Primary" OnClick="Insert" Disabled="_busy">Insert</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Info"   OnClick="Search" Disabled="@(_root.Children.Count == 0 || _busy)">Search</MudButton>
+        <MudButton Variant="Variant.Text"                           OnClick="Reset"  Disabled="_busy">Reset</MudButton>
+        <MudSpacer />
+        @if (_words.Count > 0)
+        {
+            <MudText Typo="Typo.body2" Class="mud-text-secondary">Words: @string.Join(", ", _words)</MudText>
+        }
+    </div>
+
+    @if (_status is not null)
+    {
+        <MudText Typo="Typo.body2" Class="@(_ok ? "result-found mb-3" : "mud-text-secondary mb-3")">@_status</MudText>
+    }
+
+    @{
+        var ps = Layout();
+        var tH = ps.Count == 0 ? 1 : (int)ps.Max(p => p.D) + 1;
+    }
+    <div class="tree-frame" style="height:@(tH * LH + 40)px">
+        @if (ps.Count == 0)
+        {
+            <div class="tree-empty">empty — insert a word to build the trie</div>
+        }
+        else
+        {
+            <svg class="tree-edges" width="100%" height="100%" preserveAspectRatio="none">
+                @foreach (var p in ps.Where(p => p.TN.Parent is not null))
+                {
+                    var par = ps.First(x => x.TN == p.TN.Parent);
+                    <line x1="@par.X.ToString(Inv)%" y1="@par.Y"
+                          x2="@p.X.ToString(Inv)%"   y2="@p.Y"
+                          class="tree-edge @(p.TN.OnPath ? "active" : "")" />
+                }
+            </svg>
+            @foreach (var p in ps)
+            {
+                <div class="tree-node trie-node @TNC(p.TN) @(p.TN.IsEnd ? "word-end" : "")"
+                     style="left:@p.X.ToString(Inv)%; top:@(p.Y - R)px" @key="p.TN.Id">
+                    @(p.TN.Char == '\0' ? "·" : p.TN.Char.ToString())
+                </div>
+            }
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private const int LH = 72, R = 20;
+    private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
+
+    private readonly TN _root = new() { Id = 0, Char = '\0' };
+    private int _id = 1;
+    private string _word = "";
+    private string? _status;
+    private bool _ok, _busy;
+    private readonly List<string> _words = [];
+
+    // ── Insert ───────────────────────────────────────────────────────────────
+
+    private async Task Insert()
+    {
+        var w = _word.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(w)) return;
+        _busy = true; _status = null; ClearAll(_root);
+
+        var cur = _root;
+        foreach (var ch in w)
+        {
+            if (!cur.Children.TryGetValue(ch, out var next))
+            {
+                next = new TN { Id = _id++, Char = ch, Parent = cur, IsEntering = true };
+                cur.Children[ch] = next;
+                Recalc(); StateHasChanged(); await Task.Delay(250);
+                next.IsEntering = false;
+            }
+            next.OnPath = true; StateHasChanged(); await Task.Delay(260);
+            next.OnPath = false;
+            cur = next;
+        }
+        cur.IsEnd = true;
+        if (!_words.Contains(w)) _words.Add(w);
+        _word = "";
+        ClearAll(_root); StateHasChanged(); _busy = false;
+    }
+
+    // ── Search ───────────────────────────────────────────────────────────────
+
+    private async Task Search()
+    {
+        var w = _word.Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(w)) return;
+        _busy = true; _status = null; ClearAll(_root);
+
+        var cur = _root;
+        foreach (var ch in w)
+        {
+            if (!cur.Children.TryGetValue(ch, out var next))
+            {
+                ClearAll(_root);
+                _status = $"\"{w}\" not found (no path for '{ch}')"; _ok = false;
+                _busy = false; return;
+            }
+            next.OnPath = true; StateHasChanged(); await Task.Delay(280);
+            next.OnPath = false; cur = next;
+            StateHasChanged(); await Task.Delay(60);
+        }
+
+        if (cur.IsEnd)
+        {
+            cur.IsFound = true;
+            _status = $"\"{w}\" found"; _ok = true;
+        }
+        else
+        {
+            _status = $"\"{w}\" is a prefix but not a stored word"; _ok = false;
+        }
+        StateHasChanged(); _busy = false;
+    }
+
+    private void Reset()
+    {
+        _root.Children.Clear(); _root.IsEnd = false;
+        _id = 1; _word = ""; _status = null; _words.Clear();
+    }
+
+    // ── Layout ───────────────────────────────────────────────────────────────
+
+    private int _leafSlot;
+
+    private List<TPos> Layout()
+    {
+        var list = new List<TPos>(); _leafSlot = 0;
+        if (_root.Children.Count == 0) return list;
+        Assign(_root, 0, list); // skip root from visual list
+        var maxSlot = Math.Max(1, _leafSlot);
+        foreach (var p in list) { p.X = (p.XSlot + 0.5) / maxSlot * 100.0; p.Y = p.D * LH + R + 8; }
+        return list;
+    }
+
+    private double Assign(TN n, int depth, List<TPos> list)
+    {
+        if (n != _root)
+        {
+            var pos = new TPos { TN = n, D = depth };
+            list.Add(pos);
+            if (!n.Children.Any())
+            {
+                pos.XSlot = _leafSlot++;
+                return pos.XSlot;
+            }
+            var childSlots = n.Children.Values.OrderBy(c => c.Char).Select(c => Assign(c, depth + 1, list)).ToList();
+            pos.XSlot = childSlots.Average();
+            return pos.XSlot;
+        }
+        // Root: just recurse children
+        var slots = n.Children.Values.OrderBy(c => c.Char).Select(c => Assign(c, depth + 1, list)).ToList();
+        return slots.Count > 0 ? slots.Average() : 0;
+    }
+
+    private void Recalc() { /* Layout is recomputed every render */ }
+
+    private static void ClearAll(TN n)
+    {
+        n.OnPath = n.IsEntering = n.IsFound = false;
+        foreach (var child in n.Children.Values) ClearAll(child);
+    }
+
+    private static string TNC(TN n)
+    {
+        if (n.IsFound)    return "found";
+        if (n.OnPath)     return "on-path";
+        if (n.IsEntering) return "entering";
+        return "";
+    }
+
+    private sealed class TN
+    {
+        public int Id { get; init; }
+        public char Char { get; init; }
+        public bool IsEnd { get; set; }
+        public TN? Parent { get; init; }
+        public Dictionary<char, TN> Children { get; } = [];
+        public bool OnPath, IsEntering, IsFound;
+    }
+
+    private sealed class TPos { public TN TN { get; init; } = null!; public int D; public double X, Y, XSlot; }
+}

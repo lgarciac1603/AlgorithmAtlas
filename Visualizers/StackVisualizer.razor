@@ -1,0 +1,139 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 stack-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Push &amp; Pop</MudText>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">
+        Push values onto the stack and pop them off. Watch the underlying array grow when it runs out of space.
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudTextField T="string" @bind-Value="_inputValue" Label="Value" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Style="max-width: 120px" Disabled="_isAnimating" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Push" Disabled="_isAnimating">Push</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="Pop" Disabled="@(_items.Count == 0 || _isAnimating)">Pop</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Info" OnClick="Peek"
+                   Disabled="@(_items.Count == 0 || _isAnimating)">Peek</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_isAnimating">Reset</MudButton>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">
+            Count: @_items.Count / Capacity: @_capacity
+        </MudText>
+    </div>
+
+    <div class="stack-layout">
+        <div class="stack-column">
+            <div class="stack-label">Stack (top → bottom)</div>
+            <div class="stack-frame">
+                @if (_items.Count == 0)
+                {
+                    <div class="stack-empty">empty</div>
+                }
+                @for (var i = _items.Count - 1; i >= 0; i--)
+                {
+                    var entry = _items[i];
+                    var isTop = i == _items.Count - 1;
+                    <div class="stack-item @(entry.IsExiting ? "exiting" : "") @(isTop ? "top" : "") @(isTop && _isPeeking ? "peeking" : "")" @key="entry.Id">
+                        @entry.Value
+                        @if (isTop)
+                        {
+                            <span class="top-marker">TOP</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="array-column">
+            <div class="stack-label">Underlying array (capacity @_capacity)</div>
+            <div class="array-row">
+                @for (var i = 0; i < _capacity; i++)
+                {
+                    var hasValue = i < _items.Count;
+                    <div class="array-slot @(hasValue ? "filled" : "")">
+                        <span class="array-index">@i</span>
+                        @if (hasValue)
+                        {
+                            <span class="array-value">@_items[i].Value</span>
+                        }
+                    </div>
+                }
+            </div>
+            @if (_isResizing)
+            {
+                <div class="resize-note">Capacity full — doubling to @_capacity…</div>
+            }
+        </div>
+    </div>
+</MudPaper>
+
+@code {
+    private readonly List<StackEntry> _items = [];
+    private int _capacity = 4;
+    private int _nextId;
+    private string _inputValue = "";
+    private bool _isResizing;
+    private bool _isAnimating;
+    private bool _isPeeking;
+
+    private async Task Push()
+    {
+        _isAnimating = true;
+
+        var value = string.IsNullOrWhiteSpace(_inputValue) ? (_items.Count + 1).ToString() : _inputValue.Trim();
+
+        if (_items.Count == _capacity)
+        {
+            _isResizing = true;
+            StateHasChanged();
+            await Task.Delay(450);
+            _capacity *= 2;
+            _isResizing = false;
+            StateHasChanged();
+            await Task.Delay(300);
+        }
+
+        _items.Add(new StackEntry { Id = _nextId++, Value = value });
+        _inputValue = "";
+        _isAnimating = false;
+    }
+
+    private async Task Pop()
+    {
+        if (_items.Count == 0)
+        {
+            return;
+        }
+
+        _isAnimating = true;
+        _items[^1].IsExiting = true;
+        StateHasChanged();
+        await Task.Delay(250);
+        _items.RemoveAt(_items.Count - 1);
+        _isAnimating = false;
+    }
+
+    private async Task Peek()
+    {
+        if (_items.Count == 0) return;
+        _isAnimating = true;
+        _isPeeking = true;
+        StateHasChanged();
+        await Task.Delay(700);
+        _isPeeking = false;
+        _isAnimating = false;
+    }
+
+    private void Reset()
+    {
+        _items.Clear();
+        _capacity = 4;
+        _nextId = 0;
+    }
+
+    private sealed class StackEntry
+    {
+        public int Id { get; init; }
+        public string Value { get; init; } = "";
+        public bool IsExiting { get; set; }
+    }
+}

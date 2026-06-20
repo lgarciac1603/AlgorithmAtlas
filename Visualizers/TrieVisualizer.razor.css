@@ -1,0 +1,12 @@
+.trie-node {
+    font-size: 0.9rem;
+    width: 38px;
+    height: 38px;
+}
+
+.trie-node.word-end {
+    border-style: double;
+    border-width: 3px;
+}
+
+.result-found { color: var(--mud-palette-success); font-weight: 600; }

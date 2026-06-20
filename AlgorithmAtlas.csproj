@@ -10,6 +10,19 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.8" PrivateAssets="all" />
+    <PackageReference Include="MudBlazor" Version="9.5.0" />
+    <PackageReference Include="Markdig" Version="0.41.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Components\" />
+    <Folder Include="Visualizers\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="AlgorithmAtlas.Tests\**" />
+    <Content Remove="AlgorithmAtlas.Tests\**" />
+    <None Remove="AlgorithmAtlas.Tests\**" />
   </ItemGroup>
 
 </Project>

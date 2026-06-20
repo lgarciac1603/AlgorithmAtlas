@@ -1,0 +1,160 @@
+@namespace AlgorithmAtlas.Visualizers
+
+<MudPaper Class="pa-4 array-visualizer" Outlined="true">
+    <MudText Typo="Typo.subtitle1" Class="mb-1">Try it: Insert, Remove &amp; Search</MudText>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">
+        Insert at any index and watch elements shift right. Linear search scans one cell at a time — the step counter shows exactly why it is O(n).
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-3">
+        <MudTextField T="string" @bind-Value="_inputValue" Label="Value" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Style="max-width: 110px" Disabled="_isAnimating" />
+        <MudNumericField T="int" @bind-Value="_index" Label="Index" Variant="Variant.Outlined"
+                         Margin="Margin.Dense" Min="0" Max="@_items.Count" Style="max-width: 90px" Disabled="_isAnimating" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Insert" Disabled="_isAnimating">Insert</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="RemoveAt"
+                   Disabled="@(_items.Count == 0 || _isAnimating)">Remove</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_isAnimating">Reset</MudButton>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">Length: @_items.Count</MudText>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-4">
+        <MudTextField T="string" @bind-Value="_searchValue" Label="Search" Variant="Variant.Outlined"
+                      Margin="Margin.Dense" Style="max-width: 140px" Disabled="_isAnimating" />
+        <MudButton Variant="Variant.Outlined" Color="Color.Info" OnClick="Search"
+                   Disabled="@(_items.Count == 0 || _isAnimating)">Search</MudButton>
+        @if (_searchResult is not null)
+        {
+            <MudText Typo="Typo.body2" Class="@(_searchFound ? "result-found" : "mud-text-secondary")">
+                @_searchResult
+            </MudText>
+        }
+    </div>
+
+    <div class="array-label">Array (contiguous memory)</div>
+    <div class="array-frame">
+        @if (_items.Count == 0)
+        {
+            <div class="array-empty">empty</div>
+        }
+        @for (var i = 0; i < _items.Count; i++)
+        {
+            var entry = _items[i];
+            <div class="array-cell @CellClass(entry)" @key="entry.Id">
+                <span class="array-index">@i</span>
+                <span class="array-value">@entry.Value</span>
+            </div>
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private readonly List<ArrayEntry> _items = [];
+    private int _nextId;
+    private string _inputValue = "";
+    private int _index;
+    private bool _isAnimating;
+    private string _searchValue = "";
+    private string? _searchResult;
+    private bool _searchFound;
+
+    private async Task Insert()
+    {
+        _isAnimating = true;
+        ClearSearch();
+        var value = string.IsNullOrWhiteSpace(_inputValue) ? (_nextId + 1).ToString() : _inputValue.Trim();
+        var at = Math.Clamp(_index, 0, _items.Count);
+        for (var i = at; i < _items.Count; i++) _items[i].IsShifting = true;
+        StateHasChanged();
+        await Task.Delay(250);
+        var entry = new ArrayEntry { Id = _nextId++, Value = value, IsEntering = true };
+        _items.Insert(at, entry);
+        foreach (var e in _items) e.IsShifting = false;
+        _inputValue = "";
+        StateHasChanged();
+        await Task.Delay(250);
+        entry.IsEntering = false;
+        _isAnimating = false;
+    }
+
+    private async Task RemoveAt()
+    {
+        if (_items.Count == 0) return;
+        _isAnimating = true;
+        ClearSearch();
+        var at = Math.Clamp(_index, 0, _items.Count - 1);
+        _items[at].IsExiting = true;
+        for (var i = at + 1; i < _items.Count; i++) _items[i].IsShifting = true;
+        StateHasChanged();
+        await Task.Delay(250);
+        _items.RemoveAt(at);
+        foreach (var e in _items) e.IsShifting = false;
+        _isAnimating = false;
+    }
+
+    private async Task Search()
+    {
+        if (_items.Count == 0 || string.IsNullOrWhiteSpace(_searchValue)) return;
+        _isAnimating = true;
+        ClearSearch();
+        var target = _searchValue.Trim();
+        for (var i = 0; i < _items.Count; i++)
+        {
+            _items[i].IsScanning = true;
+            StateHasChanged();
+            await Task.Delay(220);
+            if (_items[i].Value == target)
+            {
+                _items[i].IsScanning = false;
+                _items[i].IsFound = true;
+                _searchFound = true;
+                _searchResult = $"Found at index {i} — {i + 1} comparison{(i == 0 ? "" : "s")}";
+                _isAnimating = false;
+                return;
+            }
+            _items[i].IsScanning = false;
+            StateHasChanged();
+            await Task.Delay(60);
+        }
+        _searchFound = false;
+        _searchResult = $"Not found — {_items.Count} comparisons";
+        _isAnimating = false;
+    }
+
+    private void ClearSearch()
+    {
+        foreach (var e in _items) { e.IsScanning = false; e.IsFound = false; }
+        _searchResult = null;
+        _searchFound = false;
+    }
+
+    private void Reset()
+    {
+        _items.Clear();
+        _nextId = 0;
+        _index = 0;
+        ClearSearch();
+    }
+
+    private static string CellClass(ArrayEntry e)
+    {
+        if (e.IsFound) return "found";
+        if (e.IsScanning) return "scanning";
+        if (e.IsExiting) return "exiting";
+        if (e.IsEntering) return "entering";
+        if (e.IsShifting) return "shifting";
+        return "";
+    }
+
+    private sealed class ArrayEntry
+    {
+        public int Id { get; init; }
+        public string Value { get; init; } = "";
+        public bool IsExiting { get; set; }
+        public bool IsEntering { get; set; }
+        public bool IsShifting { get; set; }
+        public bool IsScanning { get; set; }
+        public bool IsFound { get; set; }
+    }
+}
