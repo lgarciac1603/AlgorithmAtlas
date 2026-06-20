@@ -55,6 +55,9 @@ else
                 case "graph":
                     <GraphVisualizer />
                     break;
+                case "skip-list":
+                    <SkipListVisualizer />
+                    break;
             }
         </div>
     }
@@ -188,7 +191,8 @@ else
 
     private static bool HasVisualizer(string id) => id is
         "stack" or "queue" or "array" or "linked-list" or "hash-table"
-        or "binary-tree" or "avl-tree" or "binary-heap" or "trie" or "graph";
+        or "binary-tree" or "avl-tree" or "binary-heap" or "trie" or "graph"
+        or "skip-list";
 
     private static Color DifficultyColor(string difficulty) => difficulty switch
     {

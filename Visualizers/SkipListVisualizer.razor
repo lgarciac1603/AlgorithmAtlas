@@ -1,0 +1,287 @@
+@namespace AlgorithmAtlas.Visualizers
+@using AlgorithmAtlas.Services.Sorting
+@inject SoundService Sound
+
+<MudPaper Class="pa-4" Outlined="true">
+    <div class="d-flex align-center justify-space-between mb-1">
+        <MudText Typo="Typo.subtitle1">Try it: Skip List — Insert, Search, Delete</MudText>
+        <MudSwitch T="bool" @bind-Value="_sound" Color="Color.Primary">Sound</MudSwitch>
+    </div>
+    <MudText Typo="Typo.body2" Class="mud-text-secondary mb-4">
+        Each row is an "express lane". Search starts top-left: move right while the next value is too small, then drop one level and repeat. The highlighted path shows where the algorithm walked.
+    </MudText>
+
+    <div class="d-flex flex-wrap gap-2 align-center mb-3">
+        <MudNumericField T="int?" @bind-Value="_input" Label="Value (1–99)"
+                         Variant="Variant.Outlined" Margin="Margin.Dense"
+                         Style="max-width:150px" Disabled="_busy" Min="1" Max="99" />
+        <MudButton Variant="Variant.Filled"   Color="Color.Primary" OnClick="Insert"
+                   Disabled="_busy">Insert</MudButton>
+        <MudButton Variant="Variant.Outlined"                        OnClick="InsertRnd"
+                   Disabled="_busy">Random</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Info"    OnClick="Search"
+                   Disabled="@(_count == 0 || _busy || _input is null)">Search</MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error"   OnClick="Delete"
+                   Disabled="@(_count == 0 || _busy || _input is null)">Delete</MudButton>
+        <MudButton Variant="Variant.Text"                            OnClick="Reset"
+                   Disabled="_busy">Reset</MudButton>
+        <MudSpacer />
+        <MudText Typo="Typo.body2" Class="mud-text-secondary">
+            @_count node@(_count == 1 ? "" : "s") · @(_level + 1) level@(_level == 0 ? "" : "s")
+            @if (_status is not null)
+            {
+                <span class="@_statusCls">&nbsp;— @_status</span>
+            }
+        </MudText>
+    </div>
+
+    <div class="sl-canvas">
+        @if (_count == 0)
+        {
+            <div class="sl-empty">empty — insert values to build the skip list</div>
+        }
+        else
+        {
+            var cols = Level0Nodes();
+            <table class="sl-table">
+                <tbody>
+                    @for (var LL = _level; LL >= 0; LL--)
+                    {
+                        var L = LL;
+                        <tr>
+                            <td class="sl-label">L@L</td>
+                            <td class="sl-sentinel">−∞</td>
+                            @foreach (var n in cols)
+                            {
+                                <td class="sl-conn" @key="@($"a{n.Id}:{L}")">→</td>
+                                <td class="@CellClass(n, L)" @key="@($"c{n.Id}:{L}")">
+                                    @if (n.AtLevel(L)) { @n.Value }
+                                </td>
+                            }
+                            <td class="sl-conn">→</td>
+                            <td class="sl-null">∞</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</MudPaper>
+
+@code {
+    private const int MaxLevel = 6;
+    private const double P = 0.5;
+
+    private readonly VNode _head = new(MaxLevel);
+    private int _level;
+    private int _count;
+    private int _nextId = 1;
+    private int? _input;
+    private bool _busy;
+    private bool _sound = true;
+    private string? _status;
+    private string _statusCls = "";
+    private readonly Random _rng = new();
+
+    private readonly HashSet<(int id, int level)> _scanning = [];
+    private int? _foundId;
+
+    private List<VNode> Level0Nodes()
+    {
+        var list = new List<VNode>();
+        var cur = _head.Forward[0];
+        while (cur is not null) { list.Add(cur); cur = cur.Forward[0]; }
+        return list;
+    }
+
+    // ── Insert ───────────────────────────────────────────────────────────────
+
+    private Task InsertRnd() => DoInsert(_rng.Next(1, 100));
+
+    private Task Insert()
+    {
+        var v = _input is >= 1 and <= 99 ? _input.Value : _rng.Next(1, 100);
+        _input = null;
+        return DoInsert(v);
+    }
+
+    private async Task DoInsert(int value)
+    {
+        _busy = true; _status = null; _foundId = null; _scanning.Clear();
+        if (_sound) await Sound.UnlockAsync();
+
+        var update = new VNode[MaxLevel];
+        var cur = _head;
+
+        // Search path with animation
+        for (var L = _level; L >= 0; L--)
+        {
+            while (cur.Forward[L] is { } nxt && nxt.Value < value)
+            {
+                _scanning.Add((nxt.Id, L)); StateHasChanged(); await Task.Delay(170);
+                if (_sound) await Sound.ToneAsync((double)nxt.Value / 100.0, "compare", 30);
+                _scanning.Remove((nxt.Id, L));
+                cur = nxt;
+            }
+            if (cur.Forward[L]?.Value == value)
+            {
+                SetStatus($"{value} already exists", "");
+                _scanning.Clear(); _busy = false; return;
+            }
+            update[L] = cur;
+        }
+
+        // Random coin-flip height
+        var height = 1;
+        while (height < MaxLevel && _rng.NextDouble() < P) height++;
+
+        if (height - 1 > _level)
+        {
+            for (var i = _level + 1; i < height; i++) update[i] = _head;
+            _level = height - 1;
+        }
+
+        var node = new VNode(height) { Id = _nextId++, Value = value, IsEntering = true };
+        for (var i = 0; i < height; i++)
+        {
+            node.Forward[i] = update[i].Forward[i];
+            update[i].Forward[i] = node;
+        }
+        _count++;
+        _scanning.Clear();
+
+        // Animate levels bottom-to-top so the height is visible
+        for (var i = 0; i < height; i++)
+        {
+            _scanning.Add((node.Id, i)); StateHasChanged();
+            if (_sound) await Sound.ToneAsync(Math.Min(1.0, (double)value / 100.0 + i * 0.06), "swap", 50);
+            await Task.Delay(140);
+        }
+        node.IsEntering = false;
+        _scanning.Clear();
+        SetStatus($"Inserted {value} — height {height}", "sl-ok");
+        _busy = false;
+    }
+
+    // ── Search ───────────────────────────────────────────────────────────────
+
+    private async Task Search()
+    {
+        if (_input is not (>= 1 and <= 99)) return;
+        var value = _input.Value;
+        _busy = true; _status = null; _foundId = null; _scanning.Clear();
+        if (_sound) await Sound.UnlockAsync();
+
+        var cur = _head;
+        for (var L = _level; L >= 0; L--)
+        {
+            while (cur.Forward[L] is { } nxt && nxt.Value < value)
+            {
+                _scanning.Add((nxt.Id, L)); StateHasChanged(); await Task.Delay(280);
+                if (_sound) await Sound.ToneAsync((double)nxt.Value / 100.0, "compare", 35);
+                _scanning.Remove((nxt.Id, L));
+                cur = nxt;
+            }
+            if (cur.Forward[L]?.Value == value)
+            {
+                _foundId = cur.Forward[L]!.Id;
+                _scanning.Clear();
+                SetStatus($"Found {value}", "sl-ok");
+                StateHasChanged();
+                if (_sound) await Sound.FinishChimeAsync();
+                _busy = false;
+                return;
+            }
+        }
+
+        _scanning.Clear();
+        SetStatus($"{value} not found", "sl-miss");
+        _busy = false;
+    }
+
+    // ── Delete ───────────────────────────────────────────────────────────────
+
+    private async Task Delete()
+    {
+        if (_input is not (>= 1 and <= 99)) return;
+        var value = _input.Value;
+        _busy = true; _status = null; _foundId = null; _scanning.Clear();
+        if (_sound) await Sound.UnlockAsync();
+
+        var update = new VNode[MaxLevel];
+        var cur = _head;
+
+        for (var L = _level; L >= 0; L--)
+        {
+            while (cur.Forward[L] is { } nxt && nxt.Value < value)
+            {
+                _scanning.Add((nxt.Id, L)); StateHasChanged(); await Task.Delay(200);
+                if (_sound) await Sound.ToneAsync((double)nxt.Value / 100.0, "compare", 30);
+                _scanning.Remove((nxt.Id, L));
+                cur = nxt;
+            }
+            update[L] = cur;
+        }
+
+        var target = cur.Forward[0];
+        if (target?.Value != value)
+        {
+            _scanning.Clear();
+            SetStatus($"{value} not found", "sl-miss");
+            _busy = false;
+            return;
+        }
+
+        // Highlight found node, then mark exiting, then remove
+        _foundId = target.Id; _scanning.Clear(); StateHasChanged(); await Task.Delay(380);
+        target.IsExiting = true; _foundId = null; StateHasChanged(); await Task.Delay(270);
+
+        for (var i = 0; i <= _level; i++)
+        {
+            if (update[i].Forward[i] != target) break;
+            update[i].Forward[i] = target.Forward[i];
+        }
+        while (_level > 0 && _head.Forward[_level] is null) _level--;
+        _count--;
+
+        _scanning.Clear();
+        StateHasChanged();
+        SetStatus($"Deleted {value}", "");
+        _busy = false;
+    }
+
+    // ── Reset ────────────────────────────────────────────────────────────────
+
+    private void Reset()
+    {
+        for (var i = 0; i < MaxLevel; i++) _head.Forward[i] = null;
+        _level = 0; _count = 0; _nextId = 1;
+        _scanning.Clear(); _foundId = null; _status = null; _statusCls = "";
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private void SetStatus(string msg, string cls) { _status = msg; _statusCls = cls; }
+
+    private string CellClass(VNode n, int L)
+    {
+        if (!n.AtLevel(L)) return "sl-gap";
+        var cls = "sl-node";
+        if (n.IsExiting) return cls + " exiting";
+        if (n.IsEntering) cls += " entering";
+        if (_foundId == n.Id) cls += " found";
+        else if (_scanning.Contains((n.Id, L))) cls += " scanning";
+        return cls;
+    }
+
+    private sealed class VNode
+    {
+        public int Id;
+        public int Value;
+        public bool IsEntering;
+        public bool IsExiting;
+        public readonly VNode?[] Forward;
+        public VNode(int height) => Forward = new VNode?[height];
+        public bool AtLevel(int L) => L < Forward.Length;
+    }
+}

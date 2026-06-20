@@ -151,6 +151,21 @@
     }
   },
   {
+    "id": "skip-list",
+    "name": "Skip List",
+    "category": "Data Structures",
+    "description": "A probabilistic multi-level linked list where higher levels act as express lanes, giving O(log n) expected search, insert, and delete without needing rotations.",
+    "difficulty": "Hard",
+    "timeComplexity": "O(log n) expected",
+    "spaceComplexity": "O(n log n) expected",
+    "operations": {
+      "Search (avg)": "O(log n)",
+      "Insert (avg)": "O(log n)",
+      "Delete (avg)": "O(log n)",
+      "Search (worst)": "O(n)"
+    }
+  },
+  {
     "id": "bubble-sort",
     "name": "Bubble Sort",
     "category": "Sorting",

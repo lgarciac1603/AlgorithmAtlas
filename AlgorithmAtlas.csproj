@@ -19,4 +19,10 @@
     <Folder Include="Visualizers\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="AlgorithmAtlas.Tests\**" />
+    <Content Remove="AlgorithmAtlas.Tests\**" />
+    <None Remove="AlgorithmAtlas.Tests\**" />
+  </ItemGroup>
+
 </Project>

@@ -5,6 +5,8 @@ VisualStudioVersion = 18.6.11828.311 oobstable
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlgorithmAtlas", "AlgorithmAtlas.csproj", "{42013101-8D18-1188-436F-D7569293CFF4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AlgorithmAtlas.Tests", "AlgorithmAtlas.Tests\AlgorithmAtlas.Tests.csproj", "{B8E47B2A-3C1D-4F5E-9A8B-D2C4E6F08173}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{42013101-8D18-1188-436F-D7569293CFF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{42013101-8D18-1188-436F-D7569293CFF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{42013101-8D18-1188-436F-D7569293CFF4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8E47B2A-3C1D-4F5E-9A8B-D2C4E6F08173}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8E47B2A-3C1D-4F5E-9A8B-D2C4E6F08173}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8E47B2A-3C1D-4F5E-9A8B-D2C4E6F08173}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8E47B2A-3C1D-4F5E-9A8B-D2C4E6F08173}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
