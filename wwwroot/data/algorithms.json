@@ -236,5 +236,61 @@
     "difficulty": "Medium",
     "timeComplexity": "O(d · (n + k))",
     "spaceComplexity": "O(n + k)"
+  },
+  {
+    "id": "bfs",
+    "name": "Breadth-First Search",
+    "category": "Graph",
+    "description": "Explores a graph level by level using a queue, visiting all neighbors before moving deeper. Finds the shortest path in unweighted graphs.",
+    "difficulty": "Easy",
+    "timeComplexity": "O(V + E)",
+    "spaceComplexity": "O(V)",
+    "operations": {
+      "Traversal": "O(V + E)",
+      "Shortest path (unweighted)": "O(V + E)",
+      "Frontier (queue)": "O(V)"
+    }
+  },
+  {
+    "id": "dfs",
+    "name": "Depth-First Search",
+    "category": "Graph",
+    "description": "Explores as far as possible along each branch before backtracking, using a stack or recursion. Basis for cycle detection, topological sort and connected components.",
+    "difficulty": "Easy",
+    "timeComplexity": "O(V + E)",
+    "spaceComplexity": "O(V)",
+    "operations": {
+      "Traversal": "O(V + E)",
+      "Recursion / stack depth": "O(V)",
+      "Cycle detection": "O(V + E)"
+    }
+  },
+  {
+    "id": "dijkstra",
+    "name": "Dijkstra's Algorithm",
+    "category": "Graph",
+    "description": "Finds the least-cost path from a source on a weighted graph with non-negative edges by greedily settling the closest unvisited node using a priority queue.",
+    "difficulty": "Hard",
+    "timeComplexity": "O((V + E) log V)",
+    "spaceComplexity": "O(V)",
+    "operations": {
+      "Extract-min": "O(log V)",
+      "Relax edge": "O(log V)",
+      "Total (binary heap)": "O((V + E) log V)"
+    }
+  },
+  {
+    "id": "a-star",
+    "name": "A* Search",
+    "category": "Graph",
+    "description": "An informed shortest-path search that guides Dijkstra toward the goal using an admissible heuristic (f = g + h), exploring far fewer nodes while staying optimal.",
+    "difficulty": "Hard",
+    "timeComplexity": "O((V + E) log V)",
+    "spaceComplexity": "O(V)",
+    "operations": {
+      "Extract-min": "O(log V)",
+      "Relax edge": "O(log V)",
+      "Heuristic h(n)": "O(1)"
+    }
   }
 ]

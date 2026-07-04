@@ -1,0 +1,164 @@
+.ga-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.ga-frame {
+    position: relative;
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 8px;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    max-height: 380px;
+}
+
+.ga-edges {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.ga-edge {
+    stroke: var(--mud-palette-lines-default);
+    stroke-width: 2;
+    stroke-linecap: round;
+    transition: stroke 200ms ease, stroke-width 200ms ease;
+}
+
+.ga-edge.explored {
+    stroke: var(--mud-palette-info);
+    stroke-width: 2.5;
+}
+
+.ga-edge.path {
+    stroke: var(--mud-palette-success);
+    stroke-width: 4;
+}
+
+.ga-weight {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    padding: 0 4px;
+    border-radius: 4px;
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    pointer-events: none;
+}
+
+.ga-node {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1.5px solid var(--mud-palette-lines-default);
+    background: var(--mud-palette-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition: background 250ms ease, border-color 250ms ease, box-shadow 250ms ease, transform 250ms ease;
+}
+
+.ga-node-dist {
+    position: absolute;
+    bottom: -16px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--mud-palette-info);
+}
+
+.ga-node.frontier {
+    border-color: var(--mud-palette-warning);
+    box-shadow: 0 0 0 3px rgba(255, 167, 38, 0.25);
+}
+
+.ga-node.current {
+    border-color: var(--mud-palette-info);
+    background: var(--mud-palette-info);
+    color: #fff;
+    transform: translate(-50%, -50%) scale(1.15);
+    box-shadow: 0 0 0 4px rgba(66, 165, 245, 0.35);
+}
+
+.ga-node.visited {
+    border-color: var(--mud-palette-lines-default);
+    background: var(--mud-palette-action-disabled-background);
+    color: var(--mud-palette-text-secondary);
+}
+
+.ga-node.path {
+    border-color: var(--mud-palette-success);
+    background: var(--mud-palette-success);
+    color: #fff;
+    box-shadow: 0 0 0 3px rgba(102, 187, 106, 0.35);
+}
+
+/* Endpoints keep a persistent outer ring so they're identifiable before running. */
+.ga-node.start::before,
+.ga-node.goal::before {
+    position: absolute;
+    top: -16px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--mud-palette-primary);
+}
+
+.ga-node.start::before { content: "start"; }
+.ga-node.goal::before { content: "goal"; }
+
+.ga-node.start {
+    outline: 2px solid var(--mud-palette-primary);
+    outline-offset: 2px;
+}
+
+.ga-node.goal {
+    outline: 2px dashed var(--mud-palette-primary);
+    outline-offset: 2px;
+}
+
+.ga-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+    font-size: 0.75rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.ga-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ga-legend .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.ga-legend .dot.frontier { background: var(--mud-palette-warning); }
+.ga-legend .dot.current  { background: var(--mud-palette-info); }
+.ga-legend .dot.visited  { background: var(--mud-palette-action-disabled-background); }
+.ga-legend .dot.path     { background: var(--mud-palette-success); }
+
+.ga-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.ga-foot code {
+    font-size: 0.78rem;
+}

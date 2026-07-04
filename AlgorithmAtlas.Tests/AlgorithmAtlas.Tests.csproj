@@ -23,6 +23,9 @@
   -->
   <ItemGroup>
     <Compile Include="..\Services\SkipList.cs" Link="SkipList.cs" />
+    <Compile Include="..\Models\Graphs\GraphModel.cs" Link="Graphs\GraphModel.cs" />
+    <Compile Include="..\Models\Graphs\GraphStep.cs" Link="Graphs\GraphStep.cs" />
+    <Compile Include="..\Services\Graphs\GraphAlgorithms.cs" Link="Graphs\GraphAlgorithms.cs" />
   </ItemGroup>
 
 </Project>
