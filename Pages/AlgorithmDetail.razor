@@ -59,6 +59,12 @@ else
                 case "skip-list":
                     <SkipListVisualizer />
                     break;
+                case "neural-network":
+                    <NeuralNetVisualizer />
+                    break;
+                case "k-means":
+                    <KMeansVisualizer />
+                    break;
             }
         </div>
     }
@@ -203,7 +209,7 @@ else
     private static bool HasVisualizer(string id) => id is
         "stack" or "queue" or "array" or "linked-list" or "hash-table"
         or "binary-tree" or "avl-tree" or "binary-heap" or "trie" or "graph"
-        or "skip-list";
+        or "skip-list" or "neural-network" or "k-means";
 
     private static Color DifficultyColor(string difficulty) => difficulty switch
     {

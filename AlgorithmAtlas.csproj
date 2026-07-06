@@ -15,14 +15,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Components\" />
     <Folder Include="Visualizers\" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Remove="AlgorithmAtlas.Tests\**" />
+    <Compile Remove="Components\**" />
     <Content Remove="AlgorithmAtlas.Tests\**" />
+    <Content Remove="Components\**" />
+    <EmbeddedResource Remove="Components\**" />
     <None Remove="AlgorithmAtlas.Tests\**" />
+    <None Remove="Components\**" />
   </ItemGroup>
 
 </Project>

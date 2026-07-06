@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using AlgorithmAtlas;
 using AlgorithmAtlas.Services;
+using AlgorithmAtlas.Services.NeuralNetworks;
 using AlgorithmAtlas.Services.Sorting;
 using MudBlazor.Services;
 
@@ -13,5 +14,6 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddMudServices();
 builder.Services.AddScoped<AlgorithmService>();
 builder.Services.AddScoped<SoundService>();
+builder.Services.AddScoped<ExoplanetDataService>();
 
 await builder.Build().RunAsync();

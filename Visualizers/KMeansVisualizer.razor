@@ -1,0 +1,272 @@
+@namespace AlgorithmAtlas.Visualizers
+@using System.Globalization
+@using AlgorithmAtlas.Models.NeuralNetworks
+@using AlgorithmAtlas.Services.NeuralNetworks
+@inject ExoplanetDataService Data
+@implements IDisposable
+
+<MudPaper Class="pa-4 km-visualizer" Outlined="true">
+    <div class="d-flex align-center flex-wrap gap-2 mb-1">
+        <MudText Typo="Typo.subtitle1">Try it: cluster the catalog without labels</MudText>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow"
+                   OnClick="RunAsync" Disabled="_running || _dataset is null">Cluster</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_running || _dataset is null">Reset</MudButton>
+    </div>
+    <MudText Typo="Typo.body2" Class="mb-3 mud-text-secondary">
+        K-means groups a sample of Kepler objects using only two features — no disposition labels.
+        Toggle <b>Reveal labels</b> to see how far unsupervised structure lines up with the real
+        CONFIRMED / FALSE POSITIVE split.
+    </MudText>
+
+    @if (_dataset is null)
+    {
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <div class="km-controls mb-3">
+            <MudSelect T="int" Label="X axis" @bind-Value="_xFeature" Dense="true" Disabled="_running" Variant="Variant.Outlined">
+                @for (var f = 0; f < _dataset.FeatureCount; f++)
+                {
+                    var idx = f;
+                    <MudSelectItem Value="idx">@Pretty(_dataset.FeatureNames[idx])</MudSelectItem>
+                }
+            </MudSelect>
+            <MudSelect T="int" Label="Y axis" @bind-Value="_yFeature" Dense="true" Disabled="_running" Variant="Variant.Outlined">
+                @for (var f = 0; f < _dataset.FeatureCount; f++)
+                {
+                    var idx = f;
+                    <MudSelectItem Value="idx">@Pretty(_dataset.FeatureNames[idx])</MudSelectItem>
+                }
+            </MudSelect>
+            <div class="km-k">
+                <label>Clusters (k): <b>@_k</b></label>
+                <MudSlider T="int" Min="2" Max="6" Step="1" @bind-Value="_k" Disabled="_running" Color="Color.Primary" />
+            </div>
+            <MudSwitch T="bool" @bind-Value="_revealLabels" Color="Color.Secondary" Disabled="_running">Reveal labels</MudSwitch>
+        </div>
+
+        <div class="km-frame">
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" width="100%">
+                @foreach (var p in _points)
+                {
+                    <circle cx="@F(p.X)" cy="@F(p.Y)" r="1"
+                            class="km-point @(_revealLabels ? (p.Label == 1 ? "confirmed" : "falsepos") : "")"
+                            fill="@(_revealLabels ? null : Palette(p.Cluster))" />
+                }
+                @foreach (var c in _centroids)
+                {
+                    <circle cx="@F(c.X)" cy="@F(c.Y)" r="2.6" class="km-centroid" stroke="@Palette(c.Cluster)" />
+                    <circle cx="@F(c.X)" cy="@F(c.Y)" r="0.8" fill="@Palette(c.Cluster)" />
+                }
+            </svg>
+            <div class="km-axis-x">@Pretty(_dataset.FeatureNames[_xFeature])</div>
+            <div class="km-axis-y">@Pretty(_dataset.FeatureNames[_yFeature])</div>
+        </div>
+
+        <div class="km-foot">
+            <span>iteration @_iteration</span>
+            <span>inertia <code>@_inertia.ToString("0.0", Inv)</code></span>
+            <span>@_sampleSize points sampled</span>
+            @if (_finished)
+            {
+                <span class="km-agree">cluster ↔ label agreement <b>@Pct(_purity)</b></span>
+            }
+        </div>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public int StepDelayMs { get; set; } = 550;
+
+    private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+    private const int MaxSample = 700;
+
+    private ExoplanetDataset? _dataset;
+    private double[][] _standardized = [];
+    private int[] _sampleIdx = [];
+    private int _sampleSize;
+
+    private int _xFeature = 0;
+    private int _yFeature = 3;
+    private int _k = 3;
+    private bool _revealLabels;
+
+    private int _iteration;
+    private double _inertia;
+    private double _purity;
+    private bool _running;
+    private bool _finished;
+    private CancellationTokenSource? _cts;
+
+    private readonly List<Point> _points = [];
+    private readonly List<Centroid> _centroids = [];
+
+    // Axis ranges for the two selected features (over the sample), for scaling to the plot.
+    private double _xMin, _xMax, _yMin, _yMax;
+
+    private record struct Point(double X, double Y, int Cluster, int Label);
+    private record struct Centroid(double X, double Y, int Cluster);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _dataset = await Data.GetDatasetAsync();
+        _standardized = await Data.GetStandardizedAsync();
+
+        // Deterministic sample so the picture is stable and the browser stays responsive.
+        var rng = new Random(11);
+        _sampleIdx = Enumerable.Range(0, _dataset.Count).OrderBy(_ => rng.Next()).Take(MaxSample).ToArray();
+        _sampleSize = _sampleIdx.Length;
+
+        Reset();
+    }
+
+    private void Reset()
+    {
+        Cancel();
+        _iteration = 0;
+        _inertia = 0;
+        _purity = 0;
+        _finished = false;
+        _centroids.Clear();
+        ComputeRanges();
+        LoadPoints(null);
+        StateHasChanged();
+    }
+
+    public async Task RunAsync()
+    {
+        Reset();
+        _running = true;
+        _finished = false;
+        var token = (_cts = new CancellationTokenSource()).Token;
+
+        // Cluster on exactly the two displayed features so the animation matches what's clustered.
+        var pts = _sampleIdx.Select(i => new[] { _standardized[i][_xFeature], _standardized[i][_yFeature] }).ToArray();
+        var states = KMeans.Run(pts, _k, seed: 3, maxIterations: 25).ToList();
+
+        try
+        {
+            foreach (var state in states)
+            {
+                if (token.IsCancellationRequested) return;
+                Apply(state);
+                StateHasChanged();
+                await Task.Delay(StepDelayMs, token);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        _finished = true;
+        _running = false;
+        StateHasChanged();
+    }
+
+    private void Apply(KMeansState state)
+    {
+        _iteration = state.Iteration;
+        _inertia = state.Inertia;
+        LoadPoints(state.Assignments);
+
+        _centroids.Clear();
+        for (var c = 0; c < state.Centroids.Length; c++)
+        {
+            _centroids.Add(new Centroid(ScaleX(state.Centroids[c][0]), ScaleY(state.Centroids[c][1]), c));
+        }
+
+        _purity = Purity(state.Assignments, state.Centroids.Length);
+    }
+
+    private void LoadPoints(int[]? assignments)
+    {
+        _points.Clear();
+        for (var s = 0; s < _sampleIdx.Length; s++)
+        {
+            var i = _sampleIdx[s];
+            _points.Add(new Point(
+                ScaleX(_standardized[i][_xFeature]),
+                ScaleY(_standardized[i][_yFeature]),
+                assignments?[s] ?? -1,
+                _dataset!.Labels[i]));
+        }
+    }
+
+    /// <summary>Fraction of points whose cluster's majority true-label matches their own.</summary>
+    private double Purity(int[] assignments, int k)
+    {
+        var counts = new int[k, 2];
+        for (var s = 0; s < assignments.Length; s++)
+        {
+            counts[assignments[s], _dataset!.Labels[_sampleIdx[s]]]++;
+        }
+        var correct = 0;
+        for (var c = 0; c < k; c++)
+        {
+            correct += Math.Max(counts[c, 0], counts[c, 1]);
+        }
+        return assignments.Length == 0 ? 0 : (double)correct / assignments.Length;
+    }
+
+    private void ComputeRanges()
+    {
+        _xMin = _yMin = double.PositiveInfinity;
+        _xMax = _yMax = double.NegativeInfinity;
+        foreach (var i in _sampleIdx)
+        {
+            var x = _standardized[i][_xFeature];
+            var y = _standardized[i][_yFeature];
+            _xMin = Math.Min(_xMin, x); _xMax = Math.Max(_xMax, x);
+            _yMin = Math.Min(_yMin, y); _yMax = Math.Max(_yMax, y);
+        }
+    }
+
+    private double ScaleX(double v) => 4 + 92 * Norm(v, _xMin, _xMax);
+    private double ScaleY(double v) => 96 - 92 * Norm(v, _yMin, _yMax); // flip: SVG y grows downward
+
+    private static double Norm(double v, double min, double max) =>
+        max - min < 1e-9 ? 0.5 : Math.Clamp((v - min) / (max - min), 0, 1);
+
+    private void Cancel()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+        _running = false;
+    }
+
+    private static string Palette(int cluster) => cluster switch
+    {
+        0 => "#42a5f5",
+        1 => "#ec407a",
+        2 => "#66bb6a",
+        3 => "#ab47bc",
+        4 => "#ffa726",
+        5 => "#26c6da",
+        _ => "var(--mud-palette-text-secondary)"
+    };
+
+    private static string Pretty(string feature) => feature switch
+    {
+        "koi_period" => "Orbital period (days)",
+        "koi_duration" => "Transit duration (hrs)",
+        "koi_depth" => "Transit depth (ppm)",
+        "koi_prad" => "Planet radius (R⊕)",
+        "koi_teq" => "Equilibrium temp (K)",
+        "koi_insol" => "Insolation (E⊕)",
+        "koi_model_snr" => "Transit SNR",
+        "koi_steff" => "Star temp (K)",
+        "koi_slogg" => "Star gravity (log g)",
+        "koi_srad" => "Star radius (R☉)",
+        "koi_impact" => "Impact parameter",
+        _ => feature
+    };
+
+    private static string Pct(double v) => (v * 100).ToString("0.0", Inv) + "%";
+    private static string F(double v) => v.ToString("0.###", Inv);
+
+    public void Dispose() => Cancel();
+}

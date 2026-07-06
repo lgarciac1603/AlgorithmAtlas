@@ -26,6 +26,9 @@
     <Compile Include="..\Models\Graphs\GraphModel.cs" Link="Graphs\GraphModel.cs" />
     <Compile Include="..\Models\Graphs\GraphStep.cs" Link="Graphs\GraphStep.cs" />
     <Compile Include="..\Services\Graphs\GraphAlgorithms.cs" Link="Graphs\GraphAlgorithms.cs" />
+    <Compile Include="..\Services\NeuralNetworks\MultiLayerPerceptron.cs" Link="NeuralNetworks\MultiLayerPerceptron.cs" />
+    <Compile Include="..\Services\NeuralNetworks\KMeans.cs" Link="NeuralNetworks\KMeans.cs" />
+    <Compile Include="..\Models\NeuralNetworks\ExoplanetDataset.cs" Link="NeuralNetworks\ExoplanetDataset.cs" />
   </ItemGroup>
 
 </Project>

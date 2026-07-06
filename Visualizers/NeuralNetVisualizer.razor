@@ -1,0 +1,301 @@
+@namespace AlgorithmAtlas.Visualizers
+@using System.Globalization
+@using AlgorithmAtlas.Models.NeuralNetworks
+@using AlgorithmAtlas.Services.NeuralNetworks
+@inject ExoplanetDataService Data
+@implements IDisposable
+
+<MudPaper Class="pa-4 nn-visualizer" Outlined="true">
+    <div class="d-flex align-center flex-wrap gap-2 mb-1">
+        <MudText Typo="Typo.subtitle1">Try it: train a classifier by backpropagation</MudText>
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow"
+                   OnClick="RunAsync" Disabled="_running || _dataset is null">Train</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Reset" Disabled="_running || _dataset is null">Reset</MudButton>
+    </div>
+    <MudText Typo="Typo.body2" Class="mb-3 mud-text-secondary">
+        Predicting whether a Kepler object of interest is a <b>CONFIRMED</b> exoplanet or a
+        <b>FALSE POSITIVE</b> from @(_dataset?.FeatureCount ?? 11) physical features — learned by
+        the network itself, not by looking at NASA's vetting flags.
+    </MudText>
+
+    @if (_dataset is null)
+    {
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+    }
+    else
+    {
+        <div class="nn-controls mb-3">
+            <div class="nn-control">
+                <label>Hidden neurons: <b>@_hidden</b></label>
+                <MudSlider T="int" Min="2" Max="16" Step="1" @bind-Value="_hidden" Disabled="_running" Color="Color.Primary" />
+            </div>
+            <div class="nn-control">
+                <label>Learning rate: <b>@_learningRate.ToString("0.###", Inv)</b></label>
+                <MudSlider T="double" Min="0.01" Max="1.0" Step="0.01" @bind-Value="_learningRate" Disabled="_running" Color="Color.Primary" />
+            </div>
+            <div class="nn-control">
+                <label>Epochs: <b>@_maxEpochs</b></label>
+                <MudSlider T="int" Min="10" Max="120" Step="10" @bind-Value="_maxEpochs" Disabled="_running" Color="Color.Primary" />
+            </div>
+        </div>
+
+        <MudGrid>
+            <MudItem xs="12" md="7">
+                <div class="nn-frame">
+                    <svg viewBox="0 0 100 64" preserveAspectRatio="xMidYMid meet" width="100%">
+                        @* edges — width & colour encode the learned weight (green +, red −) *@
+                        @foreach (var e in _edges)
+                        {
+                            <line x1="@F(e.X1)" y1="@F(e.Y1)" x2="@F(e.X2)" y2="@F(e.Y2)"
+                                  stroke="@(e.Weight >= 0 ? "var(--mud-palette-success)" : "var(--mud-palette-error)")"
+                                  stroke-width="@F(e.Width)" stroke-opacity="@F(e.Opacity)" stroke-linecap="round" />
+                        }
+                        @foreach (var node in _nodes)
+                        {
+                            <circle cx="@F(node.X)" cy="@F(node.Y)" r="@F(node.R)"
+                                    class="nn-neuron @node.Cls" />
+                        }
+                    </svg>
+                    <div class="nn-layer-labels">
+                        <span>inputs (@(_dataset.FeatureCount))</span>
+                        <span>hidden (@_hidden)</span>
+                        <span>output</span>
+                    </div>
+                </div>
+            </MudItem>
+
+            <MudItem xs="12" md="5">
+                <div class="nn-chart">
+                    <svg viewBox="0 0 100 60" preserveAspectRatio="none" width="100%" height="150">
+                        <line x1="0" y1="0" x2="0" y2="60" class="nn-axis" />
+                        <line x1="0" y1="60" x2="100" y2="60" class="nn-axis" />
+                        @if (_lossPath is not null)
+                        {
+                            <polyline points="@_lossPath" fill="none" stroke="var(--mud-palette-error)" stroke-width="1.4" />
+                        }
+                        @if (_accPath is not null)
+                        {
+                            <polyline points="@_accPath" fill="none" stroke="var(--mud-palette-info)" stroke-width="1.4" />
+                        }
+                    </svg>
+                    <div class="nn-chart-legend">
+                        <span><i class="dot loss"></i>loss (scaled)</span>
+                        <span><i class="dot acc"></i>test accuracy</span>
+                    </div>
+                </div>
+
+                <div class="nn-metrics">
+                    <div class="nn-metric">
+                        <span class="k">epoch</span>
+                        <span class="v">@_epoch / @_maxEpochs</span>
+                    </div>
+                    <div class="nn-metric">
+                        <span class="k">train acc</span>
+                        <span class="v">@Pct(_trainAcc)</span>
+                    </div>
+                    <div class="nn-metric accent">
+                        <span class="k">test acc</span>
+                        <span class="v">@Pct(_testAcc)</span>
+                    </div>
+                    <div class="nn-metric">
+                        <span class="k">test loss</span>
+                        <span class="v">@_testLoss.ToString("0.000", Inv)</span>
+                    </div>
+                </div>
+            </MudItem>
+        </MudGrid>
+
+        <div class="nn-foot">
+            <span>@_trainCount train · @_testCount test examples (75 / 25 stratified split)</span>
+        </div>
+    }
+</MudPaper>
+
+@code {
+    [Parameter] public int StepDelayMs { get; set; } = 90;
+
+    private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+    private ExoplanetDataset? _dataset;
+    private double[][] _xTrain = [], _xTest = [];
+    private double[][] _yTrain = [], _yTest = [];
+    private int _trainCount, _testCount;
+
+    private int _hidden = 8;
+    private double _learningRate = 0.15;
+    private int _maxEpochs = 60;
+
+    private MultiLayerPerceptron? _net;
+    private int _epoch;
+    private double _trainAcc, _testAcc, _testLoss;
+    private readonly List<double> _lossHistory = [];
+    private readonly List<double> _accHistory = [];
+    private double _firstLoss = 1;
+
+    private bool _running;
+    private CancellationTokenSource? _cts;
+
+    // Precomputed geometry for the SVG diagram.
+    private readonly List<Edge> _edges = [];
+    private readonly List<Neuron> _nodes = [];
+    private string? _lossPath;
+    private string? _accPath;
+
+    private record struct Edge(double X1, double Y1, double X2, double Y2, double Weight, double Width, double Opacity);
+    private record struct Neuron(double X, double Y, double R, string Cls);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _dataset = await Data.GetDatasetAsync();
+        var standardized = await Data.GetStandardizedAsync();
+        var (train, test) = _dataset.StratifiedSplit(testFraction: 0.25, seed: 7);
+
+        _xTrain = train.Select(i => standardized[i]).ToArray();
+        _yTrain = train.Select(i => new[] { (double)_dataset.Labels[i] }).ToArray();
+        _xTest = test.Select(i => standardized[i]).ToArray();
+        _yTest = test.Select(i => new[] { (double)_dataset.Labels[i] }).ToArray();
+        _trainCount = _xTrain.Length;
+        _testCount = _xTest.Length;
+
+        Reset();
+    }
+
+    private void Reset()
+    {
+        Cancel();
+        _net = new MultiLayerPerceptron([_dataset!.FeatureCount, _hidden, 1], Activation.Tanh, seed: 42);
+        _epoch = 0;
+        _trainAcc = _testAcc = 0;
+        _testLoss = 0;
+        _lossHistory.Clear();
+        _accHistory.Clear();
+        _lossPath = _accPath = null;
+        BuildDiagram();
+        StateHasChanged();
+    }
+
+    public async Task RunAsync()
+    {
+        Reset();
+        _running = true;
+        var token = (_cts = new CancellationTokenSource()).Token;
+
+        try
+        {
+            for (_epoch = 1; _epoch <= _maxEpochs; _epoch++)
+            {
+                if (token.IsCancellationRequested) return;
+
+                var trainLoss = _net!.TrainEpoch(_xTrain, _yTrain, _learningRate, batchSize: 32);
+                _trainAcc = _net.Accuracy(_xTrain, _yTrain);
+                _testAcc = _net.Accuracy(_xTest, _yTest);
+                _testLoss = _net.Loss(_xTest, _yTest);
+
+                if (_epoch == 1) _firstLoss = Math.Max(trainLoss, 1e-6);
+                _lossHistory.Add(trainLoss);
+                _accHistory.Add(_testAcc);
+
+                BuildDiagram();
+                BuildCharts();
+                StateHasChanged();
+                await Task.Delay(StepDelayMs, token);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+        finally
+        {
+            _running = false;
+            _epoch = Math.Min(_epoch, _maxEpochs);
+        }
+        StateHasChanged();
+    }
+
+    private void Cancel()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+        _running = false;
+    }
+
+    // ── Diagram geometry ────────────────────────────────────────────────────────
+
+    private void BuildDiagram()
+    {
+        _edges.Clear();
+        _nodes.Clear();
+        if (_net is null) return;
+
+        var inputs = _net.InputSize;
+        var xIn = 10.0;
+        var xHid = 50.0;
+        var xOut = 90.0;
+
+        var inPos = Column(inputs, xIn, 1.6);
+        var hidPos = Column(_hidden, xHid, 2.2);
+        var outPos = Column(1, xOut, 3.0);
+
+        // Scale line width by the largest |weight| so the picture stays readable as weights grow.
+        var maxW = 1e-6;
+        foreach (var layer in _net.Layers)
+            foreach (var row in layer.Weights)
+                foreach (var w in row)
+                    maxW = Math.Max(maxW, Math.Abs(w));
+
+        AddEdges(_net.Layers[0], inPos, hidPos, maxW);
+        AddEdges(_net.Layers[1], hidPos, outPos, maxW);
+
+        foreach (var (x, y, _) in inPos) _nodes.Add(new Neuron(x, y, 1.6, "input"));
+        foreach (var (x, y, _) in hidPos) _nodes.Add(new Neuron(x, y, 2.2, "hidden"));
+        foreach (var (x, y, _) in outPos) _nodes.Add(new Neuron(x, y, 3.0, "output"));
+    }
+
+    private void AddEdges(MultiLayerPerceptron.Layer layer, List<(double X, double Y, double R)> from,
+                          List<(double X, double Y, double R)> to, double maxW)
+    {
+        for (var o = 0; o < layer.Outputs; o++)
+        {
+            for (var i = 0; i < layer.Inputs; i++)
+            {
+                var w = layer.Weights[o][i];
+                var mag = Math.Abs(w) / maxW;
+                _edges.Add(new Edge(from[i].X, from[i].Y, to[o].X, to[o].Y, w,
+                    Width: 0.2 + mag * 1.3, Opacity: 0.12 + mag * 0.7));
+            }
+        }
+    }
+
+    private static List<(double X, double Y, double R)> Column(int count, double x, double r)
+    {
+        var list = new List<(double, double, double)>(count);
+        var top = 6.0;
+        var bottom = 58.0;
+        for (var i = 0; i < count; i++)
+        {
+            var y = count == 1 ? (top + bottom) / 2 : top + (bottom - top) * i / (count - 1);
+            list.Add((x, y, r));
+        }
+        return list;
+    }
+
+    private void BuildCharts()
+    {
+        if (_lossHistory.Count < 2) { _lossPath = _accPath = null; return; }
+
+        var n = _lossHistory.Count;
+        string Point(int i, double v) => $"{(100.0 * i / (n - 1)).ToString("0.#", Inv)},{((1 - v) * 60).ToString("0.#", Inv)}";
+
+        // Loss is scaled by the first epoch's value so it lands in [0, 1] alongside accuracy.
+        _lossPath = string.Join(' ', _lossHistory.Select((l, i) => Point(i, Math.Min(l / _firstLoss, 1))));
+        _accPath = string.Join(' ', _accHistory.Select((a, i) => Point(i, a)));
+    }
+
+    private static string Pct(double v) => (v * 100).ToString("0.0", Inv) + "%";
+    private static string F(double v) => v.ToString("0.###", Inv);
+
+    public void Dispose() => Cancel();
+}

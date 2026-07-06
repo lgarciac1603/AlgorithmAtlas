@@ -292,5 +292,35 @@
       "Relax edge": "O(log V)",
       "Heuristic h(n)": "O(1)"
     }
+  },
+  {
+    "id": "neural-network",
+    "name": "Neural Network (Backpropagation)",
+    "category": "Neural Networks",
+    "description": "A multi-layer perceptron trained by backpropagation with gradient descent. Learns to tell CONFIRMED exoplanets from FALSE POSITIVEs using only the physical features of each Kepler candidate — a supervised learning example on real NASA data.",
+    "difficulty": "Hard",
+    "timeComplexity": "O(E · n · W) to train",
+    "spaceComplexity": "O(W)",
+    "operations": {
+      "Forward pass": "O(W)",
+      "Backprop (per example)": "O(W)",
+      "Epoch": "O(n · W)",
+      "Predict": "O(W)"
+    }
+  },
+  {
+    "id": "k-means",
+    "name": "K-Means Clustering",
+    "category": "Neural Networks",
+    "description": "An unsupervised algorithm that groups points into k clusters by alternating assignment and centroid updates (Lloyd's algorithm). Discovers structure in the exoplanet catalog with no labels — an unsupervised learning counterpart to the network above.",
+    "difficulty": "Medium",
+    "timeComplexity": "O(i · n · k · d)",
+    "spaceComplexity": "O(n + k · d)",
+    "operations": {
+      "Assign points": "O(n · k · d)",
+      "Update centroids": "O(n · d)",
+      "Iteration": "O(n · k · d)",
+      "k-means++ seeding": "O(n · k · d)"
+    }
   }
 ]

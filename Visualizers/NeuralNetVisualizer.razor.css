@@ -1,0 +1,117 @@
+.nn-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px 24px;
+}
+
+.nn-control label {
+    font-size: 0.78rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.nn-frame {
+    position: relative;
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.nn-neuron {
+    fill: var(--mud-palette-surface);
+    stroke: var(--mud-palette-lines-default);
+    stroke-width: 0.4;
+    transition: fill 250ms ease;
+}
+
+.nn-neuron.input {
+    fill: var(--mud-palette-info);
+    stroke: none;
+}
+
+.nn-neuron.hidden {
+    fill: var(--mud-palette-primary);
+    stroke: none;
+}
+
+.nn-neuron.output {
+    fill: var(--mud-palette-warning);
+    stroke: none;
+}
+
+.nn-layer-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 6%;
+    margin-top: 2px;
+    font-size: 0.7rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.nn-chart {
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.nn-axis {
+    stroke: var(--mud-palette-lines-default);
+    stroke-width: 0.5;
+}
+
+.nn-chart-legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 4px;
+    font-size: 0.72rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.nn-chart-legend .dot {
+    width: 10px;
+    height: 3px;
+    border-radius: 2px;
+    display: inline-block;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.nn-chart-legend .dot.loss { background: var(--mud-palette-error); }
+.nn-chart-legend .dot.acc  { background: var(--mud-palette-info); }
+
+.nn-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.nn-metric {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 10px;
+    border: 1px solid var(--mud-palette-lines-default);
+    border-radius: 6px;
+}
+
+.nn-metric.accent {
+    border-color: var(--mud-palette-info);
+}
+
+.nn-metric .k {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--mud-palette-text-secondary);
+}
+
+.nn-metric .v {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.nn-foot {
+    margin-top: 10px;
+    font-size: 0.76rem;
+    color: var(--mud-palette-text-secondary);
+}

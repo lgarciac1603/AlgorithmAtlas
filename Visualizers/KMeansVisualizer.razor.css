@@ -1,0 +1,84 @@
+.km-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+}
+
+.km-controls .mud-input-control {
+    max-width: 220px;
+}
+
+.km-k {
+    min-width: 160px;
+}
+
+.km-k label {
+    font-size: 0.78rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.km-frame {
+    position: relative;
+    border: 1px dashed var(--mud-palette-lines-default);
+    border-radius: 8px;
+    aspect-ratio: 3 / 2;
+    max-height: 420px;
+    margin-top: 4px;
+    padding: 4px;
+}
+
+.km-frame svg {
+    height: 100%;
+}
+
+.km-point {
+    fill: var(--mud-palette-text-secondary);
+    fill-opacity: 0.75;
+    transition: fill 300ms ease;
+}
+
+/* When labels are revealed, colour by ground truth instead of by cluster. */
+.km-point.confirmed { fill: var(--mud-palette-success) !important; fill-opacity: 0.8; }
+.km-point.falsepos  { fill: var(--mud-palette-error) !important; fill-opacity: 0.55; }
+
+.km-centroid {
+    fill: var(--mud-palette-surface);
+    stroke-width: 1.1;
+    transition: cx 400ms ease, cy 400ms ease;
+}
+
+.km-axis-x {
+    position: absolute;
+    bottom: 4px;
+    right: 10px;
+    font-size: 0.7rem;
+    color: var(--mud-palette-text-secondary);
+    background: var(--mud-palette-surface);
+    padding: 0 4px;
+}
+
+.km-axis-y {
+    position: absolute;
+    top: 10px;
+    left: 8px;
+    font-size: 0.7rem;
+    color: var(--mud-palette-text-secondary);
+    background: var(--mud-palette-surface);
+    padding: 0 4px;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+}
+
+.km-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--mud-palette-text-secondary);
+}
+
+.km-agree b {
+    color: var(--mud-palette-secondary);
+}
